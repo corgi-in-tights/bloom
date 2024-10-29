@@ -23,7 +23,7 @@ class ConfigurableCog(commands.Cog):
                     _merged[k] = v
 
             # verify types
-            for k, v in _merged:
+            for k in _merged.keys():
                 # if its a default setting key and an incorrect value, bitch about it
                 if k in self._default_settings and not isinstance(v, type(self._default_settings[k])):
                     raise TypeError(f'Invalid types {k}: {v} passed for {self.cog_id}, was expecting {type(self._default_settings[k])}')
