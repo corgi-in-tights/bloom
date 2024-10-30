@@ -12,14 +12,13 @@ default_settings = {
 class Utils(ConfigurableCog):
     def __init__(self, bot, **kwargs):
         super().__init__(bot, 'utils', default_settings, **kwargs)
-        self.start_time = datetime.now(self.bot.timezone)
         
     @app_commands.command()
     async def ping(self, interaction: discord.Interaction):
         """Latency/bot-uptime command"""
         time_passed = datetime.now(self.bot.timezone) - self.start_time
-        await interaction.response.send_message(f'{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms. \
-                        \nbot has been up for {round(time_passed.seconds)} seconds.')
+        await interaction.response.send_message(f'{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms.
+                                                \nbot has been up for {round(time_passed.seconds)} seconds.')
 
     @app_commands.command()
     @has_permissions(administrator=True)   

@@ -1,8 +1,6 @@
 import discord
 import uuid
-import aiohttp
-import asyncio
-
+import re
 
 async def user_dms_open(user) -> bool:
     try:
@@ -24,21 +22,9 @@ def is_valid_uuid(val: str) -> bool:
         return False
 
 
-async def fetch_json(url: str):
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url) as response:
-                response.raise_for_status()  # Raise an exception for HTTP errors
-                data = await response.json()
-                return data
-            
-        except aiohttp.ClientError as e:
-            print(f"Request error: {e}")
-
-        except asyncio.TimeoutError:
-            print("Request timed out")
-
-        except ValueError:
-            print("Failed to parse JSON")
-
-    return None
+# https://stackoverflow.com/a/62414348
+def escape_mentions(text, user_mentions=True):
+    if user_mentions:
+        return re.sub(r'@(everyone|here|[!&]?[0-9]{17,21})', '@\u200b\\1', text)
+    else:
+        return re.sub(r'@(everyone|here)', '@\u200b\\1', text)

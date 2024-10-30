@@ -13,6 +13,8 @@ running_instances = {}
 def user_has_instance(user_id: int):
     return user_id in running_instances
 
+def can_create_instance(max_instances: int):
+    return len(running_instances) < max_instances
 
 async def get_poll_activity_uuid(poll_uuid) -> Optional[str]:
     api_url = f"https://www.mathmatize.com/api/mm/poll_sessions/{poll_uuid}/"
@@ -25,7 +27,7 @@ async def hit_endpoint(bot, user_id, session, url, duration, trigger_event, stop
 
     # hasnt reached end of duration
     end_time = datetime.now() + timedelta(minutes=duration)
-    while datetime.now() < end_time:
+    while datetime.now(bot.timezone) < end_time:
         # if stop has been triggered
         if stop_event.is_set():
             print(f"MM; Stopping instance for {url} gracefully.")

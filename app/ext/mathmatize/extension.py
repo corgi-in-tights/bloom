@@ -9,22 +9,23 @@ from datetime import datetime, timezone, timedelta
 from configurable_cog import ConfigurableCog
 from helper import user_dms_open, is_valid_uuid
 
-from .monitor import user_has_instance, create_monitor, stop_monitor
+from .monitor import user_has_instance, can_create_instance, create_monitor, stop_monitor
 
 default_settings = {
-    'expiration_delta': timedelta(days=7),
     'max_monitors': 3,
     'proxies': [],
     'frequency': 15,
     'frequency_range': 5
 }
 
-
+# TODO
+# add proxies in env
+# fail/kill events
+# user limits (setup database connector)
 
 class MathMatize(ConfigurableCog):
     def __init__(self, bot, **kwargs):
         super().__init__(bot, 'mathmatize', default_settings, **kwargs)
-        self.start_time = datetime.now(self.bot.timezone)
         self.monitors = []
 
     @app_commands.command(name="mm-monitor")
@@ -41,10 +42,17 @@ class MathMatize(ConfigurableCog):
             await interaction.response.send_message(f"Your DMs are not open! Please ensure the bot is able to message you privately.", ephemeral=True)
             return
         
+        # has not exceeded instance limit
+        if can_create_instance(max(1, self.settings.max_monitors)):
+            await interaction.response.send_message(f"There are too many monitors running currently.", ephemeral=True)
+            return
+        
+        # user isnt being a greedy pig
         if user_has_instance(interaction.user.id):
             await interaction.response.send_message(f"You already have a poll monitor instance running!", ephemeral=True)
             return
-                
+            
+            
         # pick a random proxy if ava.
         if len(self.settings.proxies) > 0:
             proxy = random.choice(self.settings.proxies)
@@ -57,21 +65,33 @@ class MathMatize(ConfigurableCog):
                 user = await bot.fetch_user(user_id)
                 await user.send(f'Update recieved at: {url}')
             except Exception as e:
-                print(f'MM; Failed to trigger event for {user_id}: {url} due to {e}')
+                self.logger.warning(f'Failed trigger event for {user_id}: {url} due to {e}')
+
+        async def kill_event(bot, user_id, url, reason):
+            try:
+                user = await bot.fetch_user(user_id)
+                await user.send(f'Your poll monitor for {url} was killed for the following reason: {reason}')
+            except Exception as e:
+                self.logger.warning(f'Failed kill event for {user_id}: {url} due to {e}')
         
         time_to_expiration = datetime.now(self.bot.timezone) + timedelta(minutes=duration)
         await interaction.user.send(f'Poll https://www.mathmatize.com/polls/{poll_uuid}/ will now send you an update *here* until 
-                                    you use `/mm-monitor-stop` or the duration runs out at {format_dt(time_to_expiration, 'F')}.')
+                                    you use `/mm-monitor-stop` or the duration runs out at {format_dt(time_to_expiration, 'F')}.
+                                    \nPlease note there may be an up-to 
+                                    {round(self.settings.frequency + self.settings.frequency_range + self.bot.latency)} second delay.')
+        
         await interaction.response.send_message(f"You should have been messaged on how to proceed next, 
                                                 please check your DMs.", ephemeral=True)
         
 
-        await create_monitor(self.bot, interaction.user.id, poll_uuid, duration, trigger_event, self.settings.frequency, self.settings.frequency_range, proxy=proxy)
+        await create_monitor(self.bot, interaction.user.id, poll_uuid, duration, 
+                             trigger_event, self.settings.frequency, self.settings.frequency_range, 
+                             proxy=proxy, kill_event=kill_event, logger=self.logger)
 
 
     @app_commands.command(name="mm-monitor-stop")
     async def mm_monitor_stop(self, interaction: discord.Interaction):
         if await stop_monitor(interaction.user.id):
-            await interaction.response.send_message(f"Gracefully stopping your linked instance..", ephemeral=True)
+            await interaction.response.send_message(f"Gracefully stopping your linked instance.. You may recieve one last message.", ephemeral=True)
         else:
             await interaction.response.send_message(f"You do not have any current poll monitors!", ephemeral=True)

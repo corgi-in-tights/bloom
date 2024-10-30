@@ -15,6 +15,7 @@ class Development(ConfigurableCog):
             await self.bot.refresh_testing_guild()
             await self.bot.reload_extension('ext.' + extension_id)
             await ctx.send(f'Safely reloaded extension `ext.{extension_id}`.')
+            self.logger.info(f"Reloaded extension {extension_id}")
         except Exception as e:
             await ctx.send(f'There was an error while reloading extension `ext.{extension_id}`:', e)
         
@@ -22,7 +23,7 @@ class Development(ConfigurableCog):
     @commands.is_owner()
     async def shutdown(self, ctx: commands.Context):
         """Owner only - Shutdown bot"""
-        print("Shutting down gracefully...")
+        self.logger.info("Shutting down gracefully...")
         await ctx.send("Shutting down gracefully...")
         await self.bot.close()
 

@@ -2,10 +2,12 @@ import os
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+
 # == App Settings == #
 DEV: bool = True
 
 TIMEZONE = ZoneInfo("America/New_York")
+
 
 # == Bot Settings == #
 BOT_PREFIXES: list[str] = ["bloom:"]
@@ -20,18 +22,13 @@ TESTING_GUILD_ID: Optional[int] = int(os.getenv('TESTING_GUILD_ID')) if 'TESTING
 
 # == Extensions == #
 ENABLED_EXTENSIONS = ['ext.utils', 'ext.mathmatize', 'ext.reminders']
+if DEV:
+    ENABLED_EXTENSIONS.append('ext.development')
 
 EXTENSION_SETTINGS: dict = {    
     'utils': {
-        'pong_message': 'ping'
-    },
-    'conversation': {
-        'reply_on_ping': True,
-        'minimum_messages': 5,
-        'minimum_seconds': 20
+        'pong_message': 'bong'
     }
 }
 
-if DEV:
-    ENABLED_EXTENSIONS.append('ext.development')
 
