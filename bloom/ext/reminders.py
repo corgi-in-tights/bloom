@@ -3,13 +3,12 @@ import discord
 from discord import app_commands
 from discord.utils import format_dt
 from discord.ext.commands import has_permissions
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 from configurable_cog import ConfigurableCog
 from helper import user_dms_open
 
-default_settings = {
-}
+default_settings = {}
 
 class Reminders(ConfigurableCog):
     def __init__(self, bot, **kwargs):
@@ -25,7 +24,7 @@ class Reminders(ConfigurableCog):
             return
         
         self.logger.info(f"Created new reminder for {interaction.user.id} for {message} at {time_to_expiration.strftime('%Y-%m-%d %H:%M:%S')}")
-        await interaction.response.send_meessage(f"Okay! I'll remind you {format_dt(time_to_expiration, style='R')} about {message} in DMs.", ephemeral=True)
+        await interaction.response.send_meessage(f"Okay! I'll remind you at {format_dt(time_to_expiration, style='F')} about {message} in DMs.", ephemeral=True)
 
 
 async def setup(bot):

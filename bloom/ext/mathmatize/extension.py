@@ -3,8 +3,7 @@ import discord
 from discord import app_commands
 from discord.app_commands import Range
 from discord.utils import format_dt
-from discord.ext.commands import has_permissions
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 from configurable_cog import ConfigurableCog
 from helper import user_dms_open, is_valid_uuid
@@ -20,7 +19,6 @@ default_settings = {
 
 # TODO
 # add proxies in env
-# fail/kill events
 # user limits (setup database connector)
 
 class MathMatize(ConfigurableCog):
@@ -43,7 +41,7 @@ class MathMatize(ConfigurableCog):
             return
         
         # has not exceeded instance limit
-        if can_create_instance(max(1, self.settings.max_monitors)):
+        if not can_create_instance(max(1, self.settings.max_monitors)):
             await interaction.response.send_message(f"There are too many monitors running currently.", ephemeral=True)
             return
         
@@ -75,13 +73,12 @@ class MathMatize(ConfigurableCog):
                 self.logger.warning(f'Failed kill event for {user_id}: {url} due to {e}')
         
         time_to_expiration = datetime.now(self.bot.timezone) + timedelta(minutes=duration)
-        await interaction.user.send(f'Poll https://www.mathmatize.com/polls/{poll_uuid}/ will now send you an update *here* until 
-                                    you use `/mm-monitor-stop` or the duration runs out at {format_dt(time_to_expiration, 'F')}.
-                                    \nPlease note there may be an up-to 
-                                    {round(self.settings.frequency + self.settings.frequency_range + self.bot.latency)} second delay.')
+        await interaction.user.send((f'Poll https://www.mathmatize.com/polls/{poll_uuid}/ will now send you an update *here* until '
+                                    f' you use `/mm-monitor-stop` or the duration runs out at {format_dt(time_to_expiration, 'F')}.'
+                                    f'\nPlease note there may be an up-to '
+                                    f'{round(self.settings.frequency + self.settings.frequency_range + self.bot.latency)} second delay.'))
         
-        await interaction.response.send_message(f"You should have been messaged on how to proceed next, 
-                                                please check your DMs.", ephemeral=True)
+        await interaction.response.send_message(f"You should have been messaged on how to proceed next, please check your DMs.", ephemeral=True)
         
 
         await create_monitor(self.bot, interaction.user.id, poll_uuid, duration, 
@@ -91,7 +88,7 @@ class MathMatize(ConfigurableCog):
 
     @app_commands.command(name="mm-monitor-stop")
     async def mm_monitor_stop(self, interaction: discord.Interaction):
-        if await stop_monitor(interaction.user.id):
+        if await stop_monitor(interaction.user.id, logger=self.logger):
             await interaction.response.send_message(f"Gracefully stopping your linked instance.. You may recieve one last message.", ephemeral=True)
         else:
             await interaction.response.send_message(f"You do not have any current poll monitors!", ephemeral=True)

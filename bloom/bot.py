@@ -9,7 +9,7 @@ from discord.ext import commands
 
 import settings
 
-class CustomBot(commands.Bot):
+class BloomBot(commands.Bot):
     def __init__(
         self,
         *args,
@@ -44,18 +44,19 @@ def setup_logging():
     logger = logging.getLogger('discord')
     logger.setLevel(logging.INFO)
 
-    handler = logging.handlers.RotatingFileHandler(
-        filename='logs/discord.log',
-        encoding='utf-8',
-        maxBytes=16 * 1024 * 1024,  # 16 MiB
-        backupCount=5,  # Rotate through 5 files
-    )
+    # handler = logging.handlers.RotatingFileHandler(
+    #     filename=f'logs/bloom.{self.cog_id}.log',
+    #     encoding='utf-8',
+    #     maxBytes=16 * 1024 * 1024,  # 16 MiB
+    #     backupCount=5,  # Rotate through 5 files
+    # )
+    handler = logging.StreamHandler()
     dt_fmt = '%Y-%m-%d %H:%M:%S'
     formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
     handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
+    # logger.addHandler(handler)
     logger.addHandler(logging.StreamHandler())
+    return logger
 
 
 
@@ -65,7 +66,7 @@ async def main():
     intents = discord.Intents.default()
     intents.message_content = True
 
-    async with CustomBot(
+    async with BloomBot(
         command_prefix=commands.when_mentioned_or(*settings.BOT_PREFIXES),
         initial_extensions = settings.ENABLED_EXTENSIONS,
         extension_settings = settings.EXTENSION_SETTINGS,
@@ -77,4 +78,5 @@ async def main():
         await bot.start(settings.BOT_TOKEN)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

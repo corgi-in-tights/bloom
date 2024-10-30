@@ -1,10 +1,8 @@
+import logging
 import asyncio
 import httpx
 import random
 from datetime import datetime, timedelta
-from typing import Optional
-
-from helper import fetch_json
 
 # keyed by user id
 running_instances = {}
@@ -16,13 +14,7 @@ def user_has_instance(user_id: int):
 def can_create_instance(max_instances: int):
     return len(running_instances) < max_instances
 
-async def get_poll_activity_uuid(poll_uuid) -> Optional[str]:
-    api_url = f"https://www.mathmatize.com/api/mm/poll_sessions/{poll_uuid}/"
-    data = await fetch_json(api_url)
-    return data['active_poll'] if (data is not None and 'active_poll' in data) else None
-
-
-async def hit_endpoint(bot, user_id, session, url, duration, trigger_event, stop_event, fail_event=None, kill_event=None, freq=5, freq_range=3):
+async def hit_endpoint(bot, user_id, session, url, duration, trigger_event, stop_event, fail_event=None, kill_event=None, freq=5, freq_range=3, logger=logging.getLogger('bloom.mathmatize')):
     last_result = None
 
     # hasnt reached end of duration
@@ -30,13 +22,13 @@ async def hit_endpoint(bot, user_id, session, url, duration, trigger_event, stop
     while datetime.now(bot.timezone) < end_time:
         # if stop has been triggered
         if stop_event.is_set():
-            print(f"MM; Stopping instance for {url} gracefully.")
+            logger.info(f"Stopping instance for {url} gracefully.")
             break
 
         try:
             response = await session.get(url)
             if response.status_code != 200:
-                print (f'MM; Failed for {user_id}!')
+                logger.info(f'Failed for {user_id}!')
                 if kill_event is not None:
                     await kill_event(bot, user_id, url, last_result, None)
                 break
@@ -51,37 +43,39 @@ async def hit_endpoint(bot, user_id, session, url, duration, trigger_event, stop
 
                 last_result = result
             else:
-                print (f'MM; Recieved response, no active poll, ending monitor for {user_id}')
+                logger.info (f'Recieved response, no active poll, ending monitor for {user_id}')
                 if kill_event is not None:
                     await kill_event(bot, user_id, url, last_result, result)
                 break
 
         except Exception as e:
-            print(f'MM; Failed to fetch {url} for {user_id} due to {e}')
+            print(f'Failed to fetch {url} for {user_id} due to {e}')
             break
 
         # wait for a random interval based on freq
         await asyncio.sleep(random.uniform(freq - freq_range, freq + freq_range))
 
-    print(f"MM; Instance for {url} has completed or was stopped.")
+    logger.info(f"Instance for {url} has completed or was stopped.")
 
 
-async def create_monitor(bot, user_id, poll_uuid, duration, trigger_event, freq, freq_range, proxy=None, fail_event=None, kill_event=None):
+async def create_monitor(bot, user_id, poll_uuid, duration, trigger_event, freq, freq_range, proxy=None, fail_event=None, kill_event=None, logger=logging.getLogger('bloom.mathmatize')):
     stop_event = asyncio.Event()
     api_url = f"https://www.mathmatize.com/api/mm/poll_sessions/{poll_uuid}/"
 
+    logger.info(f"Creating new poll monitor for {poll_uuid} for {user_id} for {duration} minutes.")
     async with httpx.AsyncClient(proxy = proxy) as session:
         task = asyncio.create_task(hit_endpoint(
             bot, user_id, session, api_url, duration, trigger_event, stop_event, 
             freq=freq, freq_range=freq_range,
-            fail_event=fail_event, kill_event=kill_event)
+            fail_event=fail_event, kill_event=kill_event,
+            logger=logger)
         )
         
         running_instances[user_id] = (task, stop_event)
         await task  
 
 
-async def stop_monitor(user_id, graceful=True) -> bool:
+async def stop_monitor(user_id, graceful=True, logger=logging.getLogger('bloom.mathmatize')) -> bool:
     if user_id in running_instances:
         task, stop_event = running_instances[user_id]
         
@@ -94,12 +88,12 @@ async def stop_monitor(user_id, graceful=True) -> bool:
             try:
                 await task
             except asyncio.CancelledError:
-                print(f"Instance for {user_id} was forcefully stopped.")
+                logger.info(f"Poll instance for {user_id} was forcefully cancelled.")
 
         # Remove the instance from the dictionary
         del running_instances[user_id]
-        print(f"Instance for {user_id} has been stopped.")
+        logger.info(f"Instance for {user_id} has been stopped.")
         return True
 
-    print(f"No running instance found for {user_id}.")
+    logger.info(f"No running instance found for {user_id}.")
     return False

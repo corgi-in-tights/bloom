@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext.commands import has_permissions
-from datetime import datetime, timezone
+from datetime import datetime
 
 from configurable_cog import ConfigurableCog
 
@@ -17,8 +17,8 @@ class Utils(ConfigurableCog):
     async def ping(self, interaction: discord.Interaction):
         """Latency/bot-uptime command"""
         time_passed = datetime.now(self.bot.timezone) - self.start_time
-        await interaction.response.send_message(f'{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms.
-                                                \nbot has been up for {round(time_passed.seconds)} seconds.')
+        await interaction.response.send_message((f'{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms.\n'
+                                                f'bot has been up for {round(time_passed.seconds)} seconds.'))
 
     @app_commands.command()
     @has_permissions(administrator=True)   
