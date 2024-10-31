@@ -1,3 +1,4 @@
+# https://medium.com/@thomaschaigneau.ai/building-and-launching-your-discord-bot-a-step-by-step-guide-f803f7943d33
 FROM python:3.12-slim as python-base
 
 ENV PYTHONUNBUFFERED=1 \

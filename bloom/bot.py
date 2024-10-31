@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 import settings
+from database import setup_database
 
 class BloomBot(commands.Bot):
     def __init__(
@@ -31,6 +32,8 @@ class BloomBot(commands.Bot):
         for extension in self.initial_extensions:
             await self.load_extension(extension)
         await self.refresh_testing_guild()
+
+        await setup_database()
         
     async def refresh_testing_guild(self):
         if self.testing_guild_id:

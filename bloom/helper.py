@@ -1,6 +1,7 @@
 import discord
 import uuid
 import re
+from datetime import datetime, timedelta
 
 async def user_dms_open(user) -> bool:
     try:
@@ -28,3 +29,8 @@ def escape_mentions(text, user_mentions=True):
         return re.sub(r'@(everyone|here|[!&]?[0-9]{17,21})', '@\u200b\\1', text)
     else:
         return re.sub(r'@(everyone|here)', '@\u200b\\1', text)
+
+
+def round_datetime_minutes(date: datetime):
+    date += timedelta(seconds=30)
+    return date.replace(second=0, microsecond=0)

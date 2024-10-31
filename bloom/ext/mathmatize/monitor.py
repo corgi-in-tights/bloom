@@ -4,6 +4,8 @@ import httpx
 import random
 from datetime import datetime, timedelta
 
+from database import add_mathmatize_restriction
+
 # keyed by user id
 running_instances = {}
 

@@ -10,6 +10,8 @@ DEV: bool = True
 
 TIMEZONE = ZoneInfo("America/New_York")
 
+DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
 
 # == Bot Settings == #
 BOT_PREFIXES: list[str] = ["bloom:"]
