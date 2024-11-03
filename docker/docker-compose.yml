@@ -1,8 +1,30 @@
-version: "3"
+version: "3.8"
 
 services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env-file: env/db.env
+    environment:
+      POSTGRES_DB: pysite
+      POSTGRES_PASSWORD: pysite
+      POSTGRES_USER: pysite
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
   bot:
     container_name: "discord_bot"
     build: .
-    volumes:
-      - ./.env:/discord_bot/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - /.env
+
+volumes:
+  db-data:

@@ -29,12 +29,12 @@ FROM python-base as runtime
 
 COPY --from=builder-base $VENV_PATH $VENV_PATH
 
-COPY ./docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY ./docker/bot-entrypoint.sh /bot-entrypoint.sh
+RUN chmod +x /bot-entrypoint.sh
 
 COPY ./bloom /app/bloom
 COPY .env /app/.env
 WORKDIR /app
 
-ENTRYPOINT /entrypoint.sh $0 $@
+ENTRYPOINT /bot-entrypoint.sh $0 $@
 CMD [ "python3", "bloom/bot.py"]

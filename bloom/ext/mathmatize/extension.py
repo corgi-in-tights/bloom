@@ -25,10 +25,13 @@ class MathMatize(ConfigurableCog):
     def __init__(self, bot, **kwargs):
         super().__init__(bot, 'mathmatize', default_settings, **kwargs)
         self.monitors = []
+        self.logger.info(f"Loaded {len(self.settings.proxies)} proxies.")
 
     @app_commands.command(name="mm-monitor")
     async def mm_monitor(self, interaction: discord.Interaction, poll_uuid: str, duration: Range[int, 5, 180] = 120):
         """Start monitoring MathMatize for polls."""
+
+        user_id = interaction.user.id
 
         # check if passed string is actually a UUID
         if not is_valid_uuid(poll_uuid):
@@ -46,7 +49,7 @@ class MathMatize(ConfigurableCog):
             return
         
         # user isnt being a greedy pig
-        if user_has_instance(interaction.user.id):
+        if user_has_instance(user_id):
             await interaction.response.send_message(f"You already have a poll monitor instance running!", ephemeral=True)
             return
             
@@ -72,18 +75,19 @@ class MathMatize(ConfigurableCog):
             except Exception as e:
                 self.logger.warning(f'Failed kill event for {user_id}: {url} due to {e}')
         
-        time_to_expiration = datetime.now(self.bot.timezone) + timedelta(minutes=duration)
-        await interaction.user.send((f'Poll https://www.mathmatize.com/polls/{poll_uuid}/ will now send you an update *here* until '
-                                    f' you use `/mm-monitor-stop` or the duration runs out at {format_dt(time_to_expiration, 'F')}.'
-                                    f'\nPlease note there may be an up-to '
-                                    f'{round(self.settings.frequency + self.settings.frequency_range + self.bot.latency)} second delay.'))
-        
-        await interaction.response.send_message(f"You should have been messaged on how to proceed next, please check your DMs.", ephemeral=True)
         
 
-        await create_monitor(self.bot, interaction.user.id, poll_uuid, duration, 
-                             trigger_event, self.settings.frequency, self.settings.frequency_range, 
-                             proxy=proxy, kill_event=kill_event, logger=self.logger)
+        current_date = datetime.now(self.bot.timezone)
+        poll_expiration_date = current_date + timedelta(minutes=duration)
+        await interaction.user.send((f'Poll https://www.mathmatize.com/polls/{poll_uuid}/ will now send you an update *here* until '
+                                    f' you use `/mm-monitor-stop` or the duration runs out at {format_dt(poll_expiration_date, 'F')}.'
+                                    f'\nPlease note there may be an up-to '
+                                    f'{round(self.settings.frequency + self.settings.frequency_range + self.bot.latency)} second delay.'))
+    
+        await interaction.response.send_message(f"You should have been messaged on how to proceed next, please check your DMs.", ephemeral=True)
+        await create_monitor(self.bot, user_id, poll_uuid, duration, 
+                            trigger_event, self.settings.frequency, self.settings.frequency_range, 
+                            proxy=proxy, kill_event=kill_event, logger=self.logger)
 
 
     @app_commands.command(name="mm-monitor-stop")

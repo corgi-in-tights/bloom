@@ -9,9 +9,11 @@ from datetime import datetime, timedelta
 
 from configurable_cog import ConfigurableCog
 from helper import user_dms_open, round_datetime_minutes
-from database import get_async_session, add_reminder, query_outdated_reminders, query_reminders_by_user_id, remove_reminders
+
+from .data import add_reminder, query_outdated_reminders, remove_reminders
 
 default_settings = {}
+
 
 class Reminders(ConfigurableCog):
     def __init__(self, bot, **kwargs):
@@ -23,29 +25,34 @@ class Reminders(ConfigurableCog):
 
     @loop(minutes=1)
     async def check_for_reminders(self):
+        self.logger.debug("Running remainder loop check...")
         current_date = datetime.now(self.bot.timezone)
 
-        async with get_async_session() as session:
-            proc = []
-            self.logger.debug("Starting remainder loop check...")
-            
-            results = await query_outdated_reminders(session, current_date)
-            for r in results:
-                try:
-                    user = await self.bot.fetch_user(r.user_id)
-                    self.logger.debug(f"Found {r.user_id} for reminder {r.id}: {r.message}")
-                    await user.send(f"Your reminder for {format_dt(r.target_date, style='F')}: {r.message}")
-                    proc.append(r.id)
-                except NotFound as e:
-                    self.logger.info(f"Could not find user {r.user_id}, deleting reminder {r.id} due to {e}")
-                    proc.append(r.id)
-                except HTTPException:
-                    self.logger.info(f"Could not find user {r.user_id} for {r.id} due to {e}, ignoring.")
-            
-            if len(proc) > 0:
-                self.logger.debug(f"Removing reminders {', '.join([str(n) for n in proc])} as they were processed.")
-                await remove_reminders(session, *proc)
-        
+        user_ids = []
+
+        results = await query_outdated_reminders(current_date)
+        for r in results:
+            try:
+                user = await self.bot.fetch_user(r.user_id)
+                self.logger.debug(f"Found {r.user_id} for reminder {
+                    r.id}: {r.message}")
+                await user.send(f"Your reminder for {format_dt(r.target_date, style='F')}: {r.message}")
+                user_ids.append(r.id)
+
+            except NotFound as e:
+                self.logger.info(f"Could not find user 
+                    {r.user_id}, deleting reminder {r.id} due to {e}")
+                user_ids.append(r.id)
+
+            except HTTPException:
+                self.logger.info(f"Could not find user {r.user_id} for 
+                    {r.id} due to {e}, ignoring.")
+
+            if len(user_ids) > 0:
+                self.logger.debug(f"Removing reminders {', '.join(
+                    [str(n) for n in user_ids])} as they were processed.")
+                await remove_reminders(*user_ids)
+
     @check_for_reminders.before_loop
     async def before_check_for_reminders(self):
         self.logger.debug("Waiting for bot to get ready to start loop...")
@@ -58,19 +65,17 @@ class Reminders(ConfigurableCog):
         if not await user_dms_open(interaction.user):
             await interaction.response.send_message(f"Your DMs are not open! Please ensure the bot is able to message you privately.", ephemeral=True)
             return
-        
+
         await interaction.response.defer(thinking=True, ephemeral=True)
-        
+
         try:
-            time_to_expiration = round_datetime_minutes(datetime.now(self.bot.timezone) + timedelta(minutes=minutes))
+            time_to_expiration = round_datetime_minutes(
+                datetime.now(self.bot.timezone) + timedelta(minutes=minutes))
             await add_reminder(interaction.guild_id, interaction.user.id, time_to_expiration, message.strip())
-            self.logger.info(f"Created new reminder for {interaction.user.id} for message '{message}' at {time_to_expiration.strftime('%Y-%m-%d %H:%M:%S')}")
+            self.logger.info(f"Created new reminder for {interaction.user.id} for message '{
+                             message}' at {time_to_expiration.strftime('%Y-%m-%d %H:%M:%S')}")
             await interaction.edit_original_response(content=f"Okay! I'll remind you at {format_dt(time_to_expiration, style='F')} about {message} in DMs.")
 
         except Exception as e:
             await interaction.edit_original_response(content=f"Sorry, there was an error!")
             self.logger.warning(e)
-    
-    
-async def setup(bot):
-    await bot.add_cog(Reminders(bot))

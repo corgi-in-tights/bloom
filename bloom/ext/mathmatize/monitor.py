@@ -4,8 +4,6 @@ import httpx
 import random
 from datetime import datetime, timedelta
 
-from database import add_mathmatize_restriction
-
 # keyed by user id
 running_instances = {}
 
@@ -74,7 +72,7 @@ async def create_monitor(bot, user_id, poll_uuid, duration, trigger_event, freq,
         )
         
         running_instances[user_id] = (task, stop_event)
-        await task  
+        await task 
 
 
 async def stop_monitor(user_id, graceful=True, logger=logging.getLogger('bloom.mathmatize')) -> bool:
@@ -99,3 +97,10 @@ async def stop_monitor(user_id, graceful=True, logger=logging.getLogger('bloom.m
 
     logger.info(f"No running instance found for {user_id}.")
     return False
+
+
+async def check_user_restriction():
+    pass
+
+async def add_user_restriction():
+    pass
