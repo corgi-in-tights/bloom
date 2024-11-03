@@ -1,11 +1,4 @@
 .github
 .gitignore
-
-LICENSE
-
 README.md
-
 docker-compose.yml
-
-pm2.json
-

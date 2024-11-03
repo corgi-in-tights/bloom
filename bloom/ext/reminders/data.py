@@ -1,12 +1,12 @@
 from datetime import datetime
-from sqlalchemy.future import select
-from sqlalchemy import delete, Column, Integer, DateTime, BigInteger, String
 
 from database import Base, get_async_session
+from sqlalchemy import BigInteger, Column, DateTime, Integer, String, delete
+from sqlalchemy.future import select
 
 
 class Reminders(Base):
-    __tablename__ = 'ext_reminders'
+    __tablename__ = "ext_reminders"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     guild_id = Column(BigInteger)
@@ -17,8 +17,7 @@ class Reminders(Base):
 
 async def add_reminder(guild_id, user_id, target_date, message):
     async with get_async_session() as session:
-        r = Reminders(guild_id=guild_id, user_id=user_id,
-                      target_date=target_date, message=message)
+        r = Reminders(guild_id=guild_id, user_id=user_id, target_date=target_date, message=message)
         session.add(r)
         await session.commit()
 

@@ -2,25 +2,30 @@ import asyncio
 import logging
 import logging.handlers
 import zoneinfo
-from typing import Optional
 
 import discord
-from discord.ext import commands
-
 import settings
 from database.setup import connect_to_db
+from discord.ext import commands
+
+default_timezone = zoneinfo.ZoneInfo("America/New_York")
 
 
 class BloomBot(commands.Bot):
     def __init__(
         self,
         *args,
-        initial_extensions: list[str] = [],
-        extension_settings: dict = {},
-        testing_guild_id: Optional[int] = None,
-        timezone=zoneinfo.ZoneInfo("America/New_York"),
+        initial_extensions: list[str] | None = None,
+        extension_settings: dict | None = None,
+        testing_guild_id: int | None = None,
+        timezone=default_timezone,
         **kwargs,
     ):
+        if initial_extensions is None:
+            initial_extensions = []
+        if extension_settings is None:
+            extension_settings = {}
+
         super().__init__(*args, **kwargs)
         self.initial_extensions = initial_extensions
         self.extension_settings = extension_settings
@@ -45,13 +50,12 @@ class BloomBot(commands.Bot):
 
 
 def setup_logging():
-    logger = logging.getLogger('discord')
+    logger = logging.getLogger("discord")
     logger.setLevel(logging.INFO)
 
     handler = logging.StreamHandler()
-    dt_fmt = '%Y-%m-%d %H:%M:%S'
-    formatter = logging.Formatter(
-        '[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
+    dt_fmt = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
     handler.setFormatter(formatter)
     logger.addHandler(logging.StreamHandler())
     return logger
@@ -69,8 +73,7 @@ async def main():
         extension_settings=settings.EXTENSION_SETTINGS,
         testing_guild_id=settings.TESTING_GUILD_ID,
         owner_id=settings.DISCORD_OWNER_ID,
-
-        timezone=settings.TIMEZONE
+        timezone=settings.TIMEZONE,
     ) as bot:
         await bot.start(settings.BOT_TOKEN)
 

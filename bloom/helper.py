@@ -1,34 +1,35 @@
-import discord
-import uuid
 import re
+import uuid
 from datetime import datetime, timedelta
+
+import discord
+
+EMPTY_MESSAGE_ERROR_CODE = 50006
+UNABLE_TO_SEND_MESSAGES_ERROR_CODE = 50007
+
 
 async def user_dms_open(user) -> bool:
     try:
         await user.send()
     except discord.HTTPException as e:
-        if e.code == 50006:  # cannot send an empty message
+        if e.code == EMPTY_MESSAGE_ERROR_CODE:
             return True
-        elif e.code == 50007:  # cannot send messages to this user
+        if e.code == UNABLE_TO_SEND_MESSAGES_ERROR_CODE:
             return False
-        else:
-            raise
+        raise  # otherwise be a shit about it
 
 
 def is_valid_uuid(val: str) -> bool:
     try:
         uuid.UUID(str(val))
-        return True
     except ValueError:
         return False
+    return True
 
 
 # https://stackoverflow.com/a/62414348
-def escape_mentions(text, user_mentions=True):
-    if user_mentions:
-        return re.sub(r'@(everyone|here|[!&]?[0-9]{17,21})', '@\u200b\\1', text)
-    else:
-        return re.sub(r'@(everyone|here)', '@\u200b\\1', text)
+def escape_mentions(text):
+    return re.sub(r"@(everyone|here|[!&]?[0-9]{17,21})", "@\u200b\\1", text)
 
 
 def round_datetime_minutes(date: datetime):

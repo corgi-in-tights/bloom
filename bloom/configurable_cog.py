@@ -1,30 +1,30 @@
 import logging
-from discord.ext import commands
-from types import SimpleNamespace
 from datetime import datetime
+from types import SimpleNamespace
+
+from discord.ext import commands
 
 
 class ConfigurableCog(commands.Cog):
-    def __init__(self, bot, cog_id, default_settings, enable_logger=True):
+    def __init__(self, bot, cog_id, default_settings):
         self.bot: commands.Bot = bot
         self.cog_id = cog_id
         self._default_settings = default_settings
 
-        self.logger = self._create_logger() if enable_logger else None
+        self.logger = self._create_logger()
 
     def cog_load(self):
-        self.logger.info(f'Reloading cog {self.cog_id}')
+        self.logger.info("Reloading cog %s", self.cog_id)
         self.start_time = datetime.now(self.bot.timezone)
         self.settings = self._load_settings()
 
     def _create_logger(self):
-        logger = logging.getLogger('bloom.' + self.cog_id)
+        logger = logging.getLogger("bloom.%s", self.cog_id)
         logger.setLevel(logging.INFO)
 
         handler = logging.StreamHandler()
-        dt_fmt = '%Y-%m-%d %H:%M:%S'
-        formatter = logging.Formatter(
-            '[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
+        dt_fmt = "%Y-%m-%d %H:%M:%S"
+        formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
         handler.setFormatter(formatter)
         logger.addHandler(logging.StreamHandler())
 
@@ -44,10 +44,13 @@ class ConfigurableCog(commands.Cog):
                 _merged[k] = v
 
         # verify types
-        for k in _merged.keys():
+        for k in _merged:
             # if its a default setting key and an incorrect value, bitch about it
             if k in self._default_settings and not isinstance(v, type(self._default_settings[k])):
-                raise TypeError(f'Invalid types {k}: {v} passed for \
-                                {self.cog_id}, was expecting {type(self._default_settings[k])}')
+                msg = (
+                    f"Invalid types {k}: {v} passed for \
+                                {self.cog_id}, was expecting {type(self._default_settings[k])}"
+                )
+                raise TypeError(msg)
 
         return SimpleNamespace(**_merged)
