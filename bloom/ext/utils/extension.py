@@ -1,25 +1,25 @@
-import discord
-from discord import app_commands
-from discord.ext.commands import has_permissions
 from datetime import datetime
 
+import discord
 from configurable_cog import ConfigurableCog
+from discord import app_commands
+from discord.ext.commands import has_permissions
 
-default_settings = {
-    'pong_message': 'pong'
-}
+default_settings = {"pong_message": "pong"}
 
 
 class Utils(ConfigurableCog):
     def __init__(self, bot, **kwargs):
-        super().__init__(bot, 'utils', default_settings, **kwargs)
+        super().__init__(bot, "utils", default_settings, **kwargs)
 
     @app_commands.command()
     async def ping(self, interaction: discord.Interaction):
         """Latency/bot-uptime command"""
         time_passed = datetime.now(self.bot.timezone) - self.start_time
-        await interaction.response.send_message((f'{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms.\n'
-                                                f'bot has been up for {round(time_passed.seconds)} seconds.'))
+        await interaction.response.send_message(
+            f"{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms.\n"
+            f"bot has been up for {round(time_passed.seconds)} seconds."
+        )
 
     @app_commands.command()
     @has_permissions(administrator=True)
@@ -28,4 +28,6 @@ class Utils(ConfigurableCog):
         await interaction.followup.send(f"Purging {message_count} messages..", ephemeral=True)
 
         await interaction.channel.purge(limit=message_count)
-        await interaction.response.send_message(f'Successfully purged {message_count} messages, executed by {interaction.user.mention}!')
+        await interaction.response.send_message(
+            f"Successfully purged {message_count} messages, executed by {interaction.user.mention}!"
+        )
