@@ -16,6 +16,7 @@ python-dotenv = "^1.0.1"
 sqlalchemy = "^2.0.36"
 greenlet = "^3.1.1"
 asyncpg = "^0.30.0"
+validators = "^0.34.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -36,12 +37,12 @@ select = ["ALL"]
 ignore = [
     #### modules
     "ANN", # flake8-annotations
-    "COM", # flake8-commas
-    "C90", # mccabe complexity
-    "DJ",  # django
-    "EXE", # flake8-executable
-    "T10", # debugger
-    "TID", # flake8-tidy-imports
+    # "COM", # flake8-commas
+    # "C90", # mccabe complexity
+    # "DJ",  # django
+    # "EXE", # flake8-executable
+    # "T10", # debugger
+    # "TID", # flake8-tidy-imports
 
     #### specific rules
     "D100",   # ignore missing docs
@@ -52,17 +53,18 @@ ignore = [
     "D105",
     "D106",
     "D107",
-    "D200",
-    "D205",
-    "D212",
-    "D400",
-    "D401",
-    "D415",
-    "E402",   # false positives for local imports
-    "TRY003", # external messages in exceptions are too verbose
-    "TD002",
-    "TD003",
-    "FIX002", # too verbose descriptions of todos
+    "S311"
+    # "D200",
+    # "D205",
+    # "D212",
+    # "D400",
+    # "D401",
+    # "D415",
+    # "E402",   # false positives for local imports
+    # "TRY003", # external messages in exceptions are too verbose
+    # "TD002",
+    # "TD003",
+    # "FIX002", # too verbose descriptions of todos
 ]
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"

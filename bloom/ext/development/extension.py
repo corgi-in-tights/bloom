@@ -10,7 +10,7 @@ class Development(ConfigurableCog):
     @commands.command(name="reload-ext")
     @commands.is_owner()
     async def reload_extension(self, ctx: commands.Context, extension_id: str):
-        """Owner only - Reload an extension"""
+        """Owner only - Reload an extension."""
         try:
             await self.bot.refresh_testing_guild()
             await self.bot.reload_extension("ext." + extension_id)
@@ -22,7 +22,7 @@ class Development(ConfigurableCog):
     @commands.command(name="shutdown")
     @commands.is_owner()
     async def shutdown(self, ctx: commands.Context):
-        """Owner only - Shutdown bot"""
+        """Owner only - Shutdown bot."""
         self.logger.info("Shutting down gracefully...")
         await ctx.send("Shutting down gracefully...")
         await self.bot.close()

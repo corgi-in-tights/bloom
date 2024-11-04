@@ -45,7 +45,7 @@ class Reminders(ConfigurableCog):
 
             if len(user_ids) > 0:
                 self.logger.debug(
-                    "Removing reminders %s as they were processed.", ", ".join([str(n) for n in user_ids])
+                    "Removing reminders %s as they were processed.", ", ".join([str(n) for n in user_ids]),
                 )
                 await remove_reminders(*user_ids)
 
@@ -56,12 +56,12 @@ class Reminders(ConfigurableCog):
 
     @app_commands.command(name="remind-me")
     async def remind_me(
-        self, interaction: discord.Interaction, minutes: app_commands.Range[int, 1, None], message: str
+        self, interaction: discord.Interaction, minutes: app_commands.Range[int, 1, None], message: str,
     ):
         """Remind you in DMs about anything after a certain amount of time."""
         if not await user_dms_open(interaction.user):
             await interaction.response.send_message(
-                "Your DMs are not open! Please ensure the bot is able to message you privately.", ephemeral=True
+                "Your DMs are not open! Please ensure the bot is able to message you privately.", ephemeral=True,
             )
             return
 
@@ -77,7 +77,7 @@ class Reminders(ConfigurableCog):
                 time_to_expiration.strftime("%Y-%m-%d %H:%M:%S"),
             )
             await interaction.edit_original_response(
-                content=f"Okay! I'll remind you at {format_dt(time_to_expiration, style='F')} about {message} in DMs."
+                content=f"Okay! I'll remind you at {format_dt(time_to_expiration, style='F')} about {message} in DMs.",
             )
 
         except discord.errors.DiscordException as e:

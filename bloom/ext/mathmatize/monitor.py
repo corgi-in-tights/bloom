@@ -1,84 +1,118 @@
-import logging
 import asyncio
-import httpx
+import logging
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime
+
+import httpx
+
+HTTP_SUCCESS_CODE = 200
+REQUEST_POLL_KEY = "active_poll"
 
 # keyed by user id
 running_instances = {}
+
+logger = logging.getLogger("bloom.mathmatize")
 
 
 def user_has_instance(user_id: int):
     return user_id in running_instances
 
+
 def can_create_instance(max_instances: int):
     return len(running_instances) < max_instances
 
-async def hit_endpoint(bot, user_id, session, url, duration, trigger_event, stop_event, fail_event=None, kill_event=None, freq=5, freq_range=3, logger=logging.getLogger('bloom.mathmatize')):
-    last_result = None
+
+async def hit_endpoint(  # noqa: PLR0913
+    session,
+    user_id,
+    activity_url,
+    stop_event,
+    end_date,
+    on_poll_change,
+    on_poll_end,
+    frequency,
+    frange=3,
+    timezone=UTC,
+):
+    last_obtained_uuid = None
 
     # hasnt reached end of duration
-    end_time = datetime.now() + timedelta(minutes=duration)
-    while datetime.now(bot.timezone) < end_time:
+    step_date = datetime.now(timezone)
+    while step_date < end_date:
         # if stop has been triggered
         if stop_event.is_set():
-            logger.info(f"Stopping instance for {url} gracefully.")
+            logger.info("Stopping instance for %s gracefully.", activity_url)
+            on_poll_end(user_id, activity_url, step_date, "Duration ended.")
             break
 
         try:
-            response = await session.get(url)
-            if response.status_code != 200:
-                logger.info(f'Failed for {user_id}!')
-                if kill_event is not None:
-                    await kill_event(bot, user_id, url, last_result, None)
-                break
-
-            data = response.json()
-            if data and 'active_poll' in data:
-                result = data['active_poll']
-                if last_result and last_result != result:
-                    await trigger_event(bot, user_id, url, last_result, result)
-                elif fail_event is not None:
-                    await fail_event(bot, user_id, url, last_result, result)
-
-                last_result = result
+            response = await session.get(activity_url)
+            if response.status_code != HTTP_SUCCESS_CODE:
+                logger.debug("Failed url %s for %s due to status code %i!", activity_url, user_id, response.status_code)
             else:
-                logger.info (f'Recieved response, no active poll, ending monitor for {user_id}')
-                if kill_event is not None:
-                    await kill_event(bot, user_id, url, last_result, result)
+                data = response.json()
+                if data and REQUEST_POLL_KEY in data:
+                    result_uuid = data[REQUEST_POLL_KEY]
+                    if last_obtained_uuid and last_obtained_uuid != result_uuid:
+                        await on_poll_change(user_id, activity_url, step_date)
+
+                    last_obtained_uuid = result_uuid
+
+                else:
+                    logger.debug(
+                        "Recieved inactive response, thus poll %s has ended, ending monitor for %s",
+                        activity_url,
+                        user_id,
+                    )
+                await on_poll_end(user_id, activity_url, step_date, "Poll is inactive or has ended.")
                 break
 
-        except Exception as e:
-            print(f'Failed to fetch {url} for {user_id} due to {e}')
+        except httpx.RequestError as e:
+            logger.debug("Failed to fetch poll %s for %i due to %s", activity_url, user_id, e)
             break
 
         # wait for a random interval based on freq
-        await asyncio.sleep(random.uniform(freq - freq_range, freq + freq_range))
+        await asyncio.sleep(random.uniform(frequency - frange, frequency + frange))
 
-    logger.info(f"Instance for {url} has completed or was stopped.")
+    logger.info("Instance for %s by %i has completed or was stopped.", activity_url, user_id)
 
 
-async def create_monitor(bot, user_id, poll_uuid, duration, trigger_event, freq, freq_range, proxy=None, fail_event=None, kill_event=None, logger=logging.getLogger('bloom.mathmatize')):
+async def create_monitor(  # noqa: PLR0913
+    user_id,
+    activity_url,
+    end_date,
+    on_poll_change,
+    on_poll_end,
+    frequency,
+    proxy=None,
+    frange=0,
+):
     stop_event = asyncio.Event()
-    api_url = f"https://www.mathmatize.com/api/mm/poll_sessions/{poll_uuid}/"
 
-    logger.info(f"Creating new poll monitor for {poll_uuid} for {user_id} for {duration} minutes.")
-    async with httpx.AsyncClient(proxy = proxy) as session:
-        task = asyncio.create_task(hit_endpoint(
-            bot, user_id, session, api_url, duration, trigger_event, stop_event, 
-            freq=freq, freq_range=freq_range,
-            fail_event=fail_event, kill_event=kill_event,
-            logger=logger)
+    logger.info("Creating new monitor at %s for %s until %s.", activity_url, user_id, end_date)
+    async with httpx.AsyncClient(proxy=proxy) as session:
+        task = asyncio.create_task(
+            hit_endpoint(
+                session=session,
+                user_id=user_id,
+                activity_url=activity_url,
+                stop_event=stop_event,
+                end_date=end_date,
+                on_poll_change=on_poll_change,
+                on_poll_end=on_poll_end,
+                frequency=frequency,
+                frange=frange,
+            ),
         )
-        
+
         running_instances[user_id] = (task, stop_event)
-        await task 
+        await task
 
 
-async def stop_monitor(user_id, graceful=True, logger=logging.getLogger('bloom.mathmatize')) -> bool:
+async def stop_monitor(user_id, graceful=True) -> bool:  # noqa: FBT002
     if user_id in running_instances:
         task, stop_event = running_instances[user_id]
-        
+
         if graceful:
             # run for one last cycle
             stop_event.set()
@@ -88,19 +122,12 @@ async def stop_monitor(user_id, graceful=True, logger=logging.getLogger('bloom.m
             try:
                 await task
             except asyncio.CancelledError:
-                logger.info(f"Poll instance for {user_id} was forcefully cancelled.")
+                logger.debug("Poll instance for %s was forcefully cancelled.", user_id)
 
         # Remove the instance from the dictionary
         del running_instances[user_id]
-        logger.info(f"Instance for {user_id} has been stopped.")
+        logger.info("Instance for %s has been stopped.", user_id)
         return True
 
-    logger.info(f"No running instance found for {user_id}.")
+    logger.debug("No running instance found for %s.", user_id)
     return False
-
-
-async def check_user_restriction():
-    pass
-
-async def add_user_restriction():
-    pass

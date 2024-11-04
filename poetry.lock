@@ -1049,6 +1049,20 @@ files = [
 ]
 
 [[package]]
+name = "validators"
+version = "0.34.0"
+description = "Python Data Validation for Humans™"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "validators-0.34.0-py3-none-any.whl", hash = "sha256:c804b476e3e6d3786fa07a30073a4ef694e617805eb1946ceee3fe5a9b8b1321"},
+    {file = "validators-0.34.0.tar.gz", hash = "sha256:647fe407b45af9a74d245b943b18e6a816acf4926974278f6dd617778e1e781f"},
+]
+
+[package.extras]
+crypto-eth-addresses = ["eth-hash[pycryptodome] (>=0.7.0)"]
+
+[[package]]
 name = "yarl"
 version = "1.15.4"
 description = "Yet another URL library"
@@ -1147,4 +1161,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "f6ed8bfa50be70c7b5adb014ccd6cd7dc3c285c51f4bb356e531ef39e08ff0e7"
+content-hash = "e64c4c5590ec206a3cfb9b0e39b99f08ed58be5d82a9fb7e32ab3179ab5b70a3"

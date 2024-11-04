@@ -1,98 +1,145 @@
 import random
+import re
+from datetime import datetime, timedelta
+
 import discord
+import validators
+from configurable_cog import ConfigurableCog
 from discord import app_commands
 from discord.app_commands import Range
 from discord.utils import format_dt
-from datetime import datetime, timedelta
+from helper import is_valid_uuid, user_dms_open
 
-from configurable_cog import ConfigurableCog
-from helper import user_dms_open, is_valid_uuid
+from .monitor import can_create_instance, create_monitor, stop_monitor, user_has_instance
 
-from .monitor import user_has_instance, can_create_instance, create_monitor, stop_monitor
+default_settings = {"max_monitors": 3, "proxies": [], "frequency": 15, "frequency_range": 5}
 
-default_settings = {
-    'max_monitors': 3,
-    'proxies': [],
-    'frequency': 15,
-    'frequency_range': 5
-}
-
-# TODO
-# add proxies in env
-# user limits (setup database connector)
 
 class MathMatize(ConfigurableCog):
     def __init__(self, bot, **kwargs):
-        super().__init__(bot, 'mathmatize', default_settings, **kwargs)
+        super().__init__(bot, "mathmatize", default_settings, **kwargs)
         self.monitors = []
-        self.logger.info(f"Loaded {len(self.settings.proxies)} proxies.")
+        self.logger.info("Loaded %s proxies.", len(self.settings.proxies))
+
+    async def on_poll_change(self, user_id, activity_url, event_date):
+        try:
+            self.logger.debug("Running poll change event for %s at %s", user_id, event_date)
+            user = await self.bot.fetch_user(user_id)
+            embed = discord.Embed(
+                title="Poll Update",
+                url=activity_url,
+                description=f"{activity_url} recieved an update at {format_dt(event_date, 'S')}.",
+                color=0x45FF9A,
+            )
+            embed.set_author(name="MathMatize")
+            await user.send(embed=embed)
+        except discord.errors.HTTPException as e:
+            self.logger.warning("Failed poll change due to HTTP exception %s", e)
+        except discord.errors.NotFound:
+            self.logger.warning("Failed poll change as user was not found.")
+
+    async def on_poll_end(self, user_id, activity_url, event_date, reason):
+        self.logger.debug("End poll event for %s at %s", user_id, event_date)
+        try:
+            user = await self.bot.fetch_user(user_id)
+
+            embed = discord.Embed(
+                title="Poll Ended",
+                url=activity_url,
+                description=f"{activity_url} was stopped due to {reason} at {format_dt(event_date, 'S')}.",
+                color=0xFB6B45,
+            )
+            embed.set_author(name="MathMatize")
+            await user.send(embed=embed)
+        except discord.errors.HTTPException as e:
+            self.logger.warning("Failed poll change due to HTTP exception %s", e)
+        except discord.errors.NotFound:
+            self.logger.warning("Failed poll change as user was not found.")
 
     @app_commands.command(name="mm-monitor")
-    async def mm_monitor(self, interaction: discord.Interaction, poll_uuid: str, duration: Range[int, 5, 180] = 120):
+    async def mm_monitor(self, interaction: discord.Interaction, activity_url: str, duration: Range[int, 5, 180] = 120):
         """Start monitoring MathMatize for polls."""
-
-        user_id = interaction.user.id
-
-        # check if passed string is actually a UUID
-        if not is_valid_uuid(poll_uuid):
-            await interaction.response.send_message(f"Provided UUID {poll_uuid} is invalid.", ephemeral=True)
+        if not validators.url(activity_url):
+            await interaction.response.send_message(f"Passed URL {activity_url} is invalid!", ephemeral=True)
             return
-        
+
+        # check if passed string has a UUID
+        uuid_pattern = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        _match = re.search(uuid_pattern, activity_url)
+        if not _match:
+            await interaction.response.send_message(
+                f"Could not obtain UUID match from url {activity_url}.",
+                ephemeral=True,
+            )
+            return
+        activity_uuid = _match.group(0)
+        if not is_valid_uuid(activity_uuid):
+            await interaction.response.send_message(f"Provided UUID {activity_uuid} is invalid.", ephemeral=True)
+            return
+
         # check if bot can DM user
         if not await user_dms_open(interaction.user):
-            await interaction.response.send_message(f"Your DMs are not open! Please ensure the bot is able to message you privately.", ephemeral=True)
+            await interaction.response.send_message(
+                "Your DMs are not open! Please ensure the bot is able to message you privately.",
+                ephemeral=True,
+            )
             return
-        
+
         # has not exceeded instance limit
         if not can_create_instance(max(1, self.settings.max_monitors)):
-            await interaction.response.send_message(f"There are too many monitors running currently.", ephemeral=True)
+            await interaction.response.send_message("There are too many monitors running currently.", ephemeral=True)
             return
-        
+
         # user isnt being a greedy pig
+        user_id = interaction.user.id
         if user_has_instance(user_id):
-            await interaction.response.send_message(f"You already have a poll monitor instance running!", ephemeral=True)
+            await interaction.response.send_message(
+                "You already have a poll monitor instance running!",
+                ephemeral=True,
+            )
             return
-            
-            
+
+
+        monitor_expiration_date = datetime.now(self.bot.timezone) + timedelta(minutes=duration)
+
+        await interaction.response.send_message(
+            "You should have been messaged on how to proceed next, please check your DMs.",
+            ephemeral=True,
+        )
+
+        embed = discord.Embed(
+            title="Created Poll Monitor!",
+            url=activity_url,
+            description=f"Poll {activity_url} will now send you an update *here* until you use `/mm-monitor-stop`"
+            f", the activity closes, or the monitor ends at {format_dt(monitor_expiration_date, 'F')}.",
+            color=0x0FB4E9,
+        )
+        embed.set_author(name="MathMatize")
+        embed.set_footer(
+            text=f"May be delayed by up-to {round(self.settings.frequency + self.settings.frequency_range)} seconds.",
+        )
+        await interaction.user.send(embed=embed)
+
         # pick a random proxy if ava.
-        if len(self.settings.proxies) > 0:
-            proxy = random.choice(self.settings.proxies)
-        else:
-            proxy = None
+        proxy = random.choice(self.settings.proxies) if len(self.settings.proxies) > 0 else None
 
-        # define trigger event
-        async def trigger_event(bot, user_id, url, last_result, result):
-            try:
-                user = await bot.fetch_user(user_id)
-                await user.send(f'Update recieved at: {url}')
-            except Exception as e:
-                self.logger.warning(f'Failed trigger event for {user_id}: {url} due to {e}')
-
-        async def kill_event(bot, user_id, url, reason):
-            try:
-                user = await bot.fetch_user(user_id)
-                await user.send(f'Your poll monitor for {url} was killed for the following reason: {reason}')
-            except Exception as e:
-                self.logger.warning(f'Failed kill event for {user_id}: {url} due to {e}')
-        
-        
-
-        current_date = datetime.now(self.bot.timezone)
-        poll_expiration_date = current_date + timedelta(minutes=duration)
-        await interaction.user.send((f'Poll https://www.mathmatize.com/polls/{poll_uuid}/ will now send you an update *here* until '
-                                    f' you use `/mm-monitor-stop` or the duration runs out at {format_dt(poll_expiration_date, 'F')}.'
-                                    f'\nPlease note there may be an up-to '
-                                    f'{round(self.settings.frequency + self.settings.frequency_range + self.bot.latency)} second delay.'))
-    
-        await interaction.response.send_message(f"You should have been messaged on how to proceed next, please check your DMs.", ephemeral=True)
-        await create_monitor(self.bot, user_id, poll_uuid, duration, 
-                            trigger_event, self.settings.frequency, self.settings.frequency_range, 
-                            proxy=proxy, kill_event=kill_event, logger=self.logger)
-
+        await create_monitor(
+            user_id=user_id,
+            activity_url=activity_url,
+            end_date=monitor_expiration_date,
+            on_poll_change=self.on_poll_change,
+            on_poll_end=self.on_poll_end,
+            frequency=self.settings.frequency,
+            frange=self.settings.frequency_range,
+            proxy=proxy,
+        )
 
     @app_commands.command(name="mm-monitor-stop")
     async def mm_monitor_stop(self, interaction: discord.Interaction):
         if await stop_monitor(interaction.user.id, logger=self.logger):
-            await interaction.response.send_message(f"Gracefully stopping your linked instance.. You may recieve one last message.", ephemeral=True)
+            await interaction.response.send_message(
+                "Gracefully stopping your linked instance.. You may recieve one last message.",
+                ephemeral=True,
+            )
         else:
-            await interaction.response.send_message(f"You do not have any current poll monitors!", ephemeral=True)
+            await interaction.response.send_message("You do not have any current poll monitors!", ephemeral=True)
