@@ -68,7 +68,7 @@ async def main():
     intents = discord.Intents.all()
 
     async with BloomBot(
-        command_prefix=commands.when_mentioned,
+        command_prefix=commands.when_mentioned_or(*settings.BOT_PREFIXES),
         intents=intents,
         initial_extensions=settings.ENABLED_EXTENSIONS,
         extension_settings=settings.EXTENSION_SETTINGS,

@@ -16,6 +16,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 
 # == Bot Settings == #
+BOT_PREFIXES = ["&"]
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     msg = "No `BOT_TOKEN` environment variable provided!"

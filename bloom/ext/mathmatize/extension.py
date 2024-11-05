@@ -13,12 +13,12 @@ from helper import is_valid_uuid, user_dms_open
 
 from .monitor import can_create_instance, create_monitor, stop_monitor, user_has_instance
 
-default_settings = {"max_monitors": 3, "proxies": [], "frequency": 15, "frequency_range": 5}
+default_settings = {"max_monitors": 3, "proxies": [], "frequency": 20, "frequency_range": 5}
 
 
 class MathMatize(ConfigurableCog):
     def __init__(self, bot, **kwargs):
-        super().__init__(bot, "mathmatize", default_settings, logger_level=logging.DEBUG, **kwargs)
+        super().__init__(bot, "mathmatize", default_settings, logger_level=logging.INFO, **kwargs)
         self.monitors = []
 
     def cog_load(self):
@@ -41,8 +41,10 @@ class MathMatize(ConfigurableCog):
             )
             embed.set_author(name="MathMatize")
             await user.send(embed=embed)
+
         except discord.errors.HTTPException as e:
             self.logger.warning("Failed poll change due to HTTP exception %s", e)
+
         except discord.errors.NotFound:
             self.logger.warning("Failed poll change as user was not found.")
 
@@ -116,6 +118,7 @@ class MathMatize(ConfigurableCog):
             return
 
         monitor_expiration_date = datetime.now(self.bot.timezone) + timedelta(minutes=duration)
+        api_url = f"https://www.mathmatize.com/api/mm/poll_sessions/{activity_uuid}/"
 
         await interaction.response.send_message(
             "You should have been messaged on how to proceed next, please check your DMs.",
@@ -127,7 +130,8 @@ class MathMatize(ConfigurableCog):
             url=activity_url,
             description=
             f"Poll {activity_url} will now send you an update *here* until you use `/mm-monitor-stop`,"
-            f" the activity closes, or the monitor ends at {format_dt(monitor_expiration_date, 'F')}.",
+            f" the activity closes, or the monitor ends at {format_dt(monitor_expiration_date, 'F')}."
+            "\n Note that the bot will only send updates if the poll changes, not if it unpauses.",
             color=0x0FB4E9,
         )
         embed.set_author(name="MathMatize")
@@ -142,6 +146,7 @@ class MathMatize(ConfigurableCog):
         await create_monitor(
             user_id=user_id,
             activity_url=activity_url,
+            api_url=api_url,
             end_date=monitor_expiration_date,
             on_poll_change=self.on_poll_change,
             on_poll_end=self.on_poll_end,

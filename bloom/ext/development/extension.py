@@ -26,7 +26,4 @@ class Development(ConfigurableCog):
         self.logger.info("Shutting down gracefully...")
         await ctx.send("Shutting down gracefully...")
         await self.bot.close()
-
-
-async def setup(bot):
-    await bot.add_cog(Development(bot))
+        self.logger.info("Shutdown complete.")

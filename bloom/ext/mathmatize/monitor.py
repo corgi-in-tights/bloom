@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import random
 from datetime import UTC, datetime
@@ -26,6 +27,7 @@ async def hit_endpoint(  # noqa: PLR0913
     session,
     user_id,
     activity_url,
+    api_url,
     stop_event,
     end_date,
     on_poll_change,
@@ -41,7 +43,7 @@ async def hit_endpoint(  # noqa: PLR0913
     while step_date < end_date:
         # if stop has been triggered
         if stop_event.is_set():
-            logger.info("Stopping instance for %s gracefully.", activity_url)
+            logger.info("Stopping instance for %s gracefully.", api_url)
             await on_poll_end(
                 user_id=user_id,
                 activity_url=activity_url,
@@ -51,45 +53,51 @@ async def hit_endpoint(  # noqa: PLR0913
             break
 
         try:
-            response = await session.get(activity_url)
+            response = await session.get(api_url)
             if response.status_code != HTTP_SUCCESS_CODE:
-                logger.debug("Failed url %s for %s due to status code %i!", activity_url, user_id, response.status_code)
+                logger.debug("Failed url %s for %s due to status code %i!", api_url, user_id, response.status_code)
             else:
-                data = response.json()
-                if data and REQUEST_POLL_KEY in data:
-                    result_uuid = data[REQUEST_POLL_KEY]
-                    if last_obtained_uuid and last_obtained_uuid != result_uuid:
-                        await on_poll_change(user_id=user_id, activity_url=activity_url, event_date=step_date)
-
-                    last_obtained_uuid = result_uuid
-
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    logger.warning("Monitor %s failed to decode response due to %s", api_url, e)
                 else:
-                    logger.debug(
-                        "Recieved inactive response, thus poll %s has ended, ending monitor for %s",
-                        activity_url,
-                        user_id,
-                    )
-                await on_poll_end(
-                    user_id=user_id,
-                    activity_url=activity_url,
-                    event_date=step_date,
-                    reason="Poll is inactive, or has ended",
-                )
-                break
+                    # if data is valid
+                    if data and REQUEST_POLL_KEY in data:
+                        result_uuid = data[REQUEST_POLL_KEY]
+                        if last_obtained_uuid and last_obtained_uuid != result_uuid:
+                            await on_poll_change(user_id=user_id, activity_url=activity_url, event_date=step_date)
+
+                        last_obtained_uuid = result_uuid
+                    # otherwise, end poll
+                    else:
+                        logger.debug(
+                            "Recieved inactive response, thus poll %s has ended, ending monitor for %s",
+                            api_url,
+                            user_id,
+                        )
+                        await on_poll_end(
+                            user_id=user_id,
+                            activity_url=activity_url,
+                            event_date=step_date,
+                            reason="Poll is inactive, or has ended",
+                        )
+                        break
 
         except httpx.RequestError as e:
-            logger.debug("Failed to fetch poll %s for %i due to %s", activity_url, user_id, e)
+            logger.debug("Failed to fetch poll %s for %i due to %s", api_url, user_id, e)
             break
 
         # wait for a random interval based on freq
         await asyncio.sleep(random.uniform(frequency - frange, frequency + frange))
 
-    logger.info("Instance for %s by %i has completed or was stopped.", activity_url, user_id)
+    logger.info("Instance for %s by %i has completed or was stopped.", api_url, user_id)
 
 
 async def create_monitor(  # noqa: PLR0913
     user_id,
     activity_url,
+    api_url,
     end_date,
     on_poll_change,
     on_poll_end,
@@ -100,13 +108,14 @@ async def create_monitor(  # noqa: PLR0913
 ):
     stop_event = asyncio.Event()
 
-    logger.info("Creating new monitor at %s for %s until %s.", activity_url, user_id, end_date)
+    logger.info("Creating new monitor at %s for %s until %s.", api_url, user_id, end_date)
     async with httpx.AsyncClient(proxy=proxy["http"]) as session:
         task = asyncio.create_task(
             hit_endpoint(
                 session=session,
                 user_id=user_id,
                 activity_url=activity_url,
+                api_url=api_url,
                 stop_event=stop_event,
                 end_date=end_date,
                 on_poll_change=on_poll_change,
