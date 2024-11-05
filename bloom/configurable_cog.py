@@ -6,6 +6,8 @@ from discord.ext import commands
 
 
 class ConfigurableCog(commands.Cog):
+    """A cog that can be configured with settings from the bot's settings, includes a logger with `self.logger`."""
+
     def __init__(self, bot, cog_id, default_settings, logger_level=logging.INFO):
         self.bot: commands.Bot = bot
         self.cog_id = cog_id

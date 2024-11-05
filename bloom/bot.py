@@ -8,6 +8,7 @@ import settings
 from database.setup import connect_to_db
 from discord.ext import commands
 
+discord.VoiceClient.warn_nacl = False  # annoying pop-up warning
 default_timezone = zoneinfo.ZoneInfo("America/New_York")
 
 
@@ -55,9 +56,9 @@ def setup_logging():
 
     handler = logging.StreamHandler()
     dt_fmt = "%Y-%m-%d %H:%M:%S"
-    formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
+    formatter = logging.Formatter("[{asctime}] [{levelname}] {name}: {message}", dt_fmt, style="{")
     handler.setFormatter(formatter)
-    logger.addHandler(logging.StreamHandler())
+    logger.addHandler(handler)
     return logger
 
 
