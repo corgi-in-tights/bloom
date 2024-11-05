@@ -12,7 +12,6 @@ from .data import add_reminder, query_outdated_reminders, remove_reminders
 
 default_settings = {}
 
-
 class Reminders(ConfigurableCog):
     def __init__(self, bot, **kwargs):
         super().__init__(bot, "reminders", default_settings, **kwargs)
@@ -55,6 +54,10 @@ class Reminders(ConfigurableCog):
         await self.bot.wait_until_ready()
 
     @app_commands.command(name="remind-me")
+    @app_commands.describe(
+        minutes="The amount of minutes to wait before reminding you.",
+        message="The message to remind you about.",
+    )
     async def remind_me(
         self, interaction: discord.Interaction, minutes: app_commands.Range[int, 1, None], message: str,
     ):

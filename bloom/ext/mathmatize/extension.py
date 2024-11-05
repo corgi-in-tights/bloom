@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 from datetime import datetime, timedelta
@@ -17,18 +18,25 @@ default_settings = {"max_monitors": 3, "proxies": [], "frequency": 15, "frequenc
 
 class MathMatize(ConfigurableCog):
     def __init__(self, bot, **kwargs):
-        super().__init__(bot, "mathmatize", default_settings, **kwargs)
+        super().__init__(bot, "mathmatize", default_settings, logger_level=logging.DEBUG, **kwargs)
         self.monitors = []
+
+    def cog_load(self):
+        super().cog_load()
         self.logger.info("Loaded %s proxies.", len(self.settings.proxies))
 
     async def on_poll_change(self, user_id, activity_url, event_date):
         try:
             self.logger.debug("Running poll change event for %s at %s", user_id, event_date)
             user = await self.bot.fetch_user(user_id)
+            if event_date:
+                desc = f"{activity_url} recieved an update at {format_dt(event_date, 'S')}"
+            else:
+                desc = f"{activity_url} recieved an update"
             embed = discord.Embed(
                 title="Poll Update",
                 url=activity_url,
-                description=f"{activity_url} recieved an update at {format_dt(event_date, 'S')}.",
+                description=desc,
                 color=0x45FF9A,
             )
             embed.set_author(name="MathMatize")
@@ -38,15 +46,19 @@ class MathMatize(ConfigurableCog):
         except discord.errors.NotFound:
             self.logger.warning("Failed poll change as user was not found.")
 
-    async def on_poll_end(self, user_id, activity_url, event_date, reason):
-        self.logger.debug("End poll event for %s at %s", user_id, event_date)
+    async def on_poll_end(self, user_id, activity_url, reason, event_date=None):
+        self.logger.debug("End poll event at %s for %s", activity_url, user_id)
         try:
             user = await self.bot.fetch_user(user_id)
 
+            if event_date:
+                desc = f'{activity_url} was stopped due to "{reason}" at {format_dt(event_date, 'S')}'
+            else:
+                desc = f'{activity_url} was stopped due to "{reason}"'
             embed = discord.Embed(
                 title="Poll Ended",
                 url=activity_url,
-                description=f"{activity_url} was stopped due to {reason} at {format_dt(event_date, 'S')}.",
+                description=desc,
                 color=0xFB6B45,
             )
             embed.set_author(name="MathMatize")
@@ -57,8 +69,12 @@ class MathMatize(ConfigurableCog):
             self.logger.warning("Failed poll change as user was not found.")
 
     @app_commands.command(name="mm-monitor")
+    @app_commands.describe(
+        activity_url="URL of the MathMatize activity to monitor.",
+        duration="Duration of the monitor in minutes, max 3 hours.",
+    )
     async def mm_monitor(self, interaction: discord.Interaction, activity_url: str, duration: Range[int, 5, 180] = 120):
-        """Start monitoring MathMatize for polls."""
+        """Start monitoring MathMatize for poll updates."""
         if not validators.url(activity_url):
             await interaction.response.send_message(f"Passed URL {activity_url} is invalid!", ephemeral=True)
             return
@@ -99,7 +115,6 @@ class MathMatize(ConfigurableCog):
             )
             return
 
-
         monitor_expiration_date = datetime.now(self.bot.timezone) + timedelta(minutes=duration)
 
         await interaction.response.send_message(
@@ -110,8 +125,9 @@ class MathMatize(ConfigurableCog):
         embed = discord.Embed(
             title="Created Poll Monitor!",
             url=activity_url,
-            description=f"Poll {activity_url} will now send you an update *here* until you use `/mm-monitor-stop`"
-            f", the activity closes, or the monitor ends at {format_dt(monitor_expiration_date, 'F')}.",
+            description=
+            f"Poll {activity_url} will now send you an update *here* until you use `/mm-monitor-stop`,"
+            f" the activity closes, or the monitor ends at {format_dt(monitor_expiration_date, 'F')}.",
             color=0x0FB4E9,
         )
         embed.set_author(name="MathMatize")
@@ -132,13 +148,15 @@ class MathMatize(ConfigurableCog):
             frequency=self.settings.frequency,
             frange=self.settings.frequency_range,
             proxy=proxy,
+            tzone=self.bot.timezone,
         )
 
     @app_commands.command(name="mm-monitor-stop")
     async def mm_monitor_stop(self, interaction: discord.Interaction):
-        if await stop_monitor(interaction.user.id, logger=self.logger):
+        """Stop your current poll monitor, if you have one."""
+        if await stop_monitor(interaction.user.id, self.on_poll_end):
             await interaction.response.send_message(
-                "Gracefully stopping your linked instance.. You may recieve one last message.",
+                "Gracefully stopping your linked instance.. you should receive a confirmation.",
                 ephemeral=True,
             )
         else:

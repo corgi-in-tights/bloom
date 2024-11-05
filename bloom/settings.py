@@ -12,7 +12,7 @@ DEV = True
 
 TIMEZONE = ZoneInfo("America/New_York")
 
-DATABASE_URL = os.getenv("DATABASE_URL") if not DEV else "sqlite+aiosqlite:///:memory:"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 
 # == Bot Settings == #
@@ -30,10 +30,13 @@ ENABLED_EXTENSIONS = ["ext.utils", "ext.mathmatize", "ext.reminders"]
 if DEV:
     ENABLED_EXTENSIONS.append("ext.development")
 
-_mm_proxy_list_path = Path(os.getenv("MATHMATIZE_PROXY_LIST_PATH", "/proxies.json"))
-_mm_proxies = []
-if _mm_proxy_list_path.exists():
+
+if MATHMATIZE_PROXY_LIST_PATH := os.getenv("MATHMATIZE_PROXY_LIST_PATH"):
+    _mm_proxy_list_path = Path(MATHMATIZE_PROXY_LIST_PATH)
     with _mm_proxy_list_path.open() as fp:
         _mm_proxies = json.load(fp)
+else:
+    _mm_proxies = []
+
 
 EXTENSION_SETTINGS: dict = {"utils": {"pong_message": "bong"}, "mathmatize": {"proxies": _mm_proxies}}

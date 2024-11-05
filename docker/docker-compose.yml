@@ -4,11 +4,10 @@ services:
   db:
     image: postgres:15-alpine
     restart: unless-stopped
-    env-file: env/db.env
     environment:
-      POSTGRES_DB: pysite
-      POSTGRES_PASSWORD: pysite
-      POSTGRES_USER: pysite
+      POSTGRES_DB: bloom
+      POSTGRES_PASSWORD: bloom_db_password
+      POSTGRES_USER: bloom
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:

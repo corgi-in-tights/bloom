@@ -14,6 +14,6 @@ async def connect_to_db():
     engine = create_async_engine(DATABASE_URL, echo=DEV)
 
     async with engine.begin() as conn:
-        await conn.run_sync(create_tables)
+        await conn.run_sync(create_tables, engine)
 
     AsyncSessionLocal.configure(bind=engine)

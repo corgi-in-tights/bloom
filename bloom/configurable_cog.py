@@ -6,27 +6,27 @@ from discord.ext import commands
 
 
 class ConfigurableCog(commands.Cog):
-    def __init__(self, bot, cog_id, default_settings):
+    def __init__(self, bot, cog_id, default_settings, logger_level=logging.INFO):
         self.bot: commands.Bot = bot
         self.cog_id = cog_id
         self._default_settings = default_settings
 
-        self.logger = self._create_logger()
+        self.logger = self._create_logger(logger_level)
 
     def cog_load(self):
         self.logger.info("Reloading cog %s", self.cog_id)
         self.start_time = datetime.now(self.bot.timezone)
         self.settings = self._load_settings()
 
-    def _create_logger(self):
-        logger = logging.getLogger("bloom.%s", self.cog_id)
-        logger.setLevel(logging.INFO)
+    def _create_logger(self, logger_level):
+        logger = logging.getLogger("bloom." + self.cog_id)
+        logger.setLevel(logger_level)
 
         handler = logging.StreamHandler()
         dt_fmt = "%Y-%m-%d %H:%M:%S"
         formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
         handler.setFormatter(formatter)
-        logger.addHandler(logging.StreamHandler())
+        logger.addHandler(handler)
 
         return logger
 
@@ -39,17 +39,17 @@ class ConfigurableCog(commands.Cog):
         _merged = provided_settings.copy()
 
         # copy over any missing keys from the default settings
-        for k, v in self._default_settings.items():
+        for k in self._default_settings:
             if k not in _merged:
-                _merged[k] = v
+                _merged[k] = self._default_settings[k]
 
         # verify types
-        for k in _merged:
+        for mk in _merged:
             # if its a default setting key and an incorrect value, bitch about it
-            if k in self._default_settings and not isinstance(v, type(self._default_settings[k])):
+            if mk in self._default_settings and not isinstance(_merged[mk], type(self._default_settings[mk])):
                 msg = (
-                    f"Invalid types {k}: {v} passed for \
-                                {self.cog_id}, was expecting {type(self._default_settings[k])}"
+                    f"Invalid types {mk}: {_merged[mk]} passed for"
+                    f" {self.cog_id}, was expecting {type(self._default_settings[k])}"
                 )
                 raise TypeError(msg)
 

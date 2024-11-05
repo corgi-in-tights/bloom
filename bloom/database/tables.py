@@ -6,5 +6,5 @@ Base = declarative_base()
 
 # Guilds & their enabled extensions
 
-def create_tables():
-    Base.metadata.create_all()
+def create_tables(engine, *args):
+    Base.metadata.create_all(bind=engine)

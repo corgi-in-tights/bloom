@@ -19,9 +19,13 @@ class Utils(ConfigurableCog):
         await interaction.response.send_message(
             f"{self.settings.pong_message}, took {round(self.bot.latency*1000)}ms.\n"
             f"bot has been up for {round(time_passed.seconds)} seconds.",
+            ephemeral=True,
         )
 
     @app_commands.command()
+    @app_commands.describe(
+        message_count="The amount of messages to purge, max 200.",
+    )
     @has_permissions(administrator=True)
     async def purge(self, interaction: discord.Interaction, message_count: app_commands.Range[int, 1, 200]):
         """Purge channel."""
