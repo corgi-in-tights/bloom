@@ -1,4 +1,6 @@
+**/.DS_Store
 .github
 .gitignore
 README.md
 docker-compose.yml
+**/__pycache__

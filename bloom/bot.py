@@ -50,7 +50,7 @@ class BloomBot(commands.Bot):
             await self.tree.sync(guild=guild)
 
 
-def setup_logging():
+def setup_bot_logging():
     logger = logging.getLogger("discord")
     logger.setLevel(logging.INFO)
 
@@ -63,7 +63,7 @@ def setup_logging():
 
 
 async def main():
-    setup_logging()
+    setup_bot_logging()
 
     intents = discord.Intents.all()
 

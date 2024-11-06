@@ -167,3 +167,8 @@ logs/
 # other
 .vscode/
 proxies.json
+
+*.db
+
+# MacOS
+.DS_Store

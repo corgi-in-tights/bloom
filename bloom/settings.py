@@ -1,19 +1,40 @@
 import json
+import logging
 import os
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
+
+def setup_app_logging():
+    logger = logging.getLogger("bloom")
+    logger.setLevel(logging.INFO)
+
+    handler = logging.StreamHandler()
+    dt_fmt = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter("[{asctime}] [{levelname}] {name}: {message}", dt_fmt, style="{")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+APP_LOGGER = setup_app_logging()
+
 load_dotenv()
 
 # == App Settings == #
-DEV = True
+DEV = os.getenv("DEV", "false").lower() == "true"
+if DEV:
+    APP_LOGGER.info("Running in development mode!")
 
 TIMEZONE = ZoneInfo("America/New_York")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+# construct url for database
+DATABASE_TYPE = os.getenv("DATABASE_TYPE", "sqlite")
+DATABASE_PATH = os.getenv("DATABASE_PATH", "/database.db")
+DATABASE_DRIVER = os.getenv("DATABASE_DRIVER", "aiosqlite")
 
+DATABASE_URL = f"{DATABASE_TYPE}+{DATABASE_DRIVER}://{DATABASE_PATH}"
 
 # == Bot Settings == #
 BOT_PREFIXES = ["&"]
