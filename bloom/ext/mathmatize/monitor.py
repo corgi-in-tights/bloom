@@ -39,15 +39,14 @@ async def hit_endpoint(  # noqa: PLR0913
     last_obtained_uuid = None
 
     # hasnt reached end of duration
-    step_date = datetime.now(tzone)
-    while step_date < end_date:
+    while datetime.now(tzone) < end_date:
         # if stop has been triggered
         if stop_event.is_set():
             logger.info("Stopping instance for %s gracefully.", api_url)
             await on_poll_end(
                 user_id=user_id,
                 activity_url=activity_url,
-                event_date=step_date,
+                event_date=datetime.now(tzone),
                 reason="Duration ended.",
             )
             break
@@ -66,7 +65,11 @@ async def hit_endpoint(  # noqa: PLR0913
                     if data and REQUEST_POLL_KEY in data:
                         result_uuid = data[REQUEST_POLL_KEY]
                         if last_obtained_uuid and last_obtained_uuid != result_uuid:
-                            await on_poll_change(user_id=user_id, activity_url=activity_url, event_date=step_date)
+                            await on_poll_change(
+                                user_id=user_id,
+                                activity_url=activity_url,
+                                event_date=datetime.now(tzone),
+                            )
 
                         last_obtained_uuid = result_uuid
                     # otherwise, end poll
@@ -79,7 +82,7 @@ async def hit_endpoint(  # noqa: PLR0913
                         await on_poll_end(
                             user_id=user_id,
                             activity_url=activity_url,
-                            event_date=step_date,
+                            event_date=datetime.now(tzone),
                             reason="Poll is inactive, or has ended",
                         )
                         break
