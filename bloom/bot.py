@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import logging.handlers
+import signal
 import zoneinfo
 
 import discord
@@ -11,6 +12,15 @@ from discord.ext import commands
 discord.VoiceClient.warn_nacl = False  # annoying pop-up warning
 default_timezone = zoneinfo.ZoneInfo("America/New_York")
 
+class KeyboardInterruptHandler:
+    def __init__(self, bot):
+        self.bot = bot
+        self._task = None
+
+    def __call__(self):
+        if self._task:
+            raise KeyboardInterrupt
+        self._task = asyncio.create_task(self.bot.close())
 
 class BloomBot(commands.Bot):
     def __init__(
@@ -76,6 +86,7 @@ async def main():
         owner_id=settings.DISCORD_OWNER_ID,
         timezone=settings.TIMEZONE,
     ) as bot:
+        bot.loop.add_signal_handler(signal.SIGINT, KeyboardInterruptHandler(bot))
         await bot.start(settings.BOT_TOKEN)
 
 
