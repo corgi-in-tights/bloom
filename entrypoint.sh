@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+echo "Executing entrypoint..."
+
 # Ensure the database file exists for SQLite
 if [ "$DATABASE_TYPE" = "sqlite" ]; then
     if [ ! -f "$DATABASE_PATH" ]; then

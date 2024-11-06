@@ -1,0 +1,5 @@
+build:
+  docker:
+    bot: Dockerfile
+run:
+  bot: "./entrypoint.sh python3 bloom/bot.py"
