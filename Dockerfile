@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
     # poetry
-    POETRY_VERISON=1.8.3 \
+    POETRY_VERSION=1.8.3 \
     POETRY_HOME="/opt/poetry" \
     POETRY_NO_INTERACTION=1 \
     # create venv ourselves
@@ -33,16 +33,14 @@ RUN apt-get update && \
 
 # install poetry using set env variables
 # mount so cache is saved
-# RUN --mount=type=cache,target=/root/.cache \
-#     curl -sSL https://install.python-poetry.org | python -
-RUN curl -sSL https://install.python-poetry.org | python -
+RUN --mount=type=cache,target=/root/.cache \
+    curl -sSL https://install.python-poetry.org | python -
 
 WORKDIR /app
 COPY poetry.lock pyproject.toml ./
 # install dependencies
-# RUN --mount=type=cache,target=/root/.cache \
-#     poetry install --no-root --only main
-RUN curl -sSL https://install.python-poetry.org | python -
+RUN --mount=type=cache,target=/root/.cache \
+    poetry install --no-root --only main
 
 
 # FINAL IMAGE USED DURING PRODUCTION
