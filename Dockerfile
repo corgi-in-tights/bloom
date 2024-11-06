@@ -33,14 +33,16 @@ RUN apt-get update && \
 
 # install poetry using set env variables
 # mount so cache is saved
-RUN --mount=type=cache,target=/root/.cache \
-    curl -sSL https://install.python-poetry.org | python -
+# RUN --mount=type=cache,target=/root/.cache \
+#     curl -sSL https://install.python-poetry.org | python -
+RUN curl -sSL https://install.python-poetry.org | python -
 
 WORKDIR /app
 COPY poetry.lock pyproject.toml ./
 # install dependencies
-RUN --mount=type=cache,target=/root/.cache \
-    poetry install --no-root --only main
+# RUN --mount=type=cache,target=/root/.cache \
+#     poetry install --no-root --only main
+RUN curl -sSL https://install.python-poetry.org | python -
 
 
 # FINAL IMAGE USED DURING PRODUCTION
