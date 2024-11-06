@@ -1,0 +1,1 @@
+web: ./entrypoint.sh python3 bloom/bot.py

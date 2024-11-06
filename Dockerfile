@@ -49,6 +49,7 @@ FROM base AS runtime
 COPY --from=builder $POETRY_HOME $POETRY_HOME
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV
 
+COPY ./Procfile /Procfile
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
@@ -57,5 +58,5 @@ COPY poetry.lock pyproject.toml ./
 COPY ./bloom ./bloom
 COPY .env ./.env
 
-ENTRYPOINT [ "/entrypoint.sh"]
-CMD [ "python3", "bloom/bot.py"]
+# ENTRYPOINT [ "/entrypoint.sh"]
+# CMD [ "python3", "bloom/bot.py"]
