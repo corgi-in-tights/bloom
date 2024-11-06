@@ -30,7 +30,7 @@ class MathMatize(ConfigurableCog):
             self.logger.debug("Running poll change event for %s at %s", user_id, event_date)
             user = await self.bot.fetch_user(user_id)
             if event_date:
-                desc = f"{activity_url} recieved an update at {format_dt(event_date, 'S')}"
+                desc = f"{activity_url} recieved an update at {format_dt(event_date, 'F')}"
             else:
                 desc = f"{activity_url} recieved an update"
             embed = discord.Embed(
