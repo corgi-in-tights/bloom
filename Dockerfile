@@ -58,5 +58,5 @@ COPY poetry.lock pyproject.toml ./
 COPY ./bloom ./bloom
 COPY .env ./.env
 
-# ENTRYPOINT [ "/entrypoint.sh"]
-# CMD [ "python3", "bloom/bot.py"]
+ENTRYPOINT [ "/entrypoint.sh"]
+CMD [ "python3", "bloom/bot.py"]
