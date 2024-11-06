@@ -49,7 +49,7 @@ FROM base AS runtime
 COPY --from=builder $POETRY_HOME $POETRY_HOME
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV
 
-COPY ./Procfile /Procfile
+COPY ./heroku.yml /heroku.yml
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
