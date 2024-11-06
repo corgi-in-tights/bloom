@@ -13,14 +13,15 @@ class ConfigurableCog(commands.Cog):
         self.cog_id = cog_id
         self._default_settings = default_settings
 
-        self.logger = self._create_logger(logger_level)
+        self._setup_logger(logger_level)
+        self.logger = logging.getLogger("bloom." + self.cog_id)
 
     def cog_load(self):
         self.logger.info("Reloading cog %s", self.cog_id)
         self.start_time = datetime.now(self.bot.timezone)
         self.settings = self._load_settings()
 
-    def _create_logger(self, logger_level):
+    def _setup_logger(self, logger_level):
         logger = logging.getLogger("bloom." + self.cog_id)
         logger.setLevel(logger_level)
 
@@ -34,7 +35,6 @@ class ConfigurableCog(commands.Cog):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-        return logger
 
     def _load_settings(self):
         # use default settings
