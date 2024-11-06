@@ -64,6 +64,10 @@ def setup_bot_logging():
     logger = logging.getLogger("discord")
     logger.setLevel(logging.INFO)
 
+    # clear previous handlers
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+
     handler = logging.StreamHandler()
     dt_fmt = "%Y-%m-%d %H:%M:%S"
     formatter = logging.Formatter("[{asctime}] [{levelname}] {name}: {message}", dt_fmt, style="{")

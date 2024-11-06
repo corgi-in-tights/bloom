@@ -24,6 +24,10 @@ class ConfigurableCog(commands.Cog):
         logger = logging.getLogger("bloom." + self.cog_id)
         logger.setLevel(logger_level)
 
+        # clear previous handlers
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
+
         handler = logging.StreamHandler()
         dt_fmt = "%Y-%m-%d %H:%M:%S"
         formatter = logging.Formatter("[{asctime}] [{levelname}] {name}: {message}", dt_fmt, style="{")
