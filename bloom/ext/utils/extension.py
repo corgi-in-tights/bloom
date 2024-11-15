@@ -4,6 +4,7 @@ import discord
 from configurable_cog import ConfigurableCog
 from discord import app_commands
 from discord.ext.commands import has_permissions
+from settings import TESTING_ADMIN_CHANNEL_ID
 
 default_settings = {"pong_message": "pong"}
 
@@ -34,4 +35,38 @@ class Utils(ConfigurableCog):
         await interaction.channel.purge(limit=message_count)
         await interaction.response.send_message(
             f"Successfully purged {message_count} messages, executed by {interaction.user.mention}!",
+        )
+
+    @app_commands.command(name="purge-request")
+    @app_commands.describe(
+        reason="Short description of why you think it should be erased >.>",
+        message_count="How many messages you think should be purged.",
+    )
+    async def purge_request(
+        self,
+        interaction: discord.Interaction,
+        reason: str,
+        message_count: app_commands.Range[int, 1, 50],
+    ):
+        """Sometimes you just need to clean up the chat, if approved, the purge will go through."""
+        admin_channel = self.bot.get_channel(TESTING_ADMIN_CHANNEL_ID)
+        if not admin_channel:
+            await interaction.response.send_message(
+                "Admin channel not found, please contact the bot owner.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message(
+            "Request sent to admin channel.",
+            ephemeral=True,
+        )
+
+        # get latest message to provide context
+        messages = [message async for message in interaction.channel.history(limit=1)]
+        url = messages[0].jump_url if messages and len(messages) > 0 else interaction.channel.mention
+
+        await admin_channel.send(
+            content=f"{interaction.user.mention} has requested to purge {message_count} messages "
+            f"at {url} with the reason: {reason}",
         )

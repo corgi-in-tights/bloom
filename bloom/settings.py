@@ -46,7 +46,11 @@ if not BOT_TOKEN:
 
 DISCORD_OWNER_ID = int(os.getenv("DISCORD_OWNER_ID")) if "DISCORD_OWNER_ID" in os.environ else None
 TESTING_GUILD_ID = int(os.getenv("TESTING_GUILD_ID")) if "TESTING_GUILD_ID" in os.environ else None
-
+TESTING_ADMIN_CHANNEL_ID = (
+    int(os.getenv("TESTING_ADMIN_CHANNEL_ID"))
+    if "TESTING_ADMIN_CHANNEL_ID" in os.environ
+    else None
+)
 
 # == Extensions == #
 ENABLED_EXTENSIONS = ["ext.utils", "ext.mathmatize", "ext.reminders"]

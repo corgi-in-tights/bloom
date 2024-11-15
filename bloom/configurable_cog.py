@@ -30,7 +30,7 @@ class ConfigurableCog(commands.Cog):
             logger.removeHandler(handler)
 
         handler = logging.StreamHandler()
-        dt_fmt = "%Y-%m-%d %H:%M:%S"
+        dt_fmt = "%Y-%m-%d %H:%M:%S %Z"
         formatter = logging.Formatter("[{asctime}] [{levelname}] {name}: {message}", dt_fmt, style="{")
         handler.setFormatter(formatter)
         logger.addHandler(handler)

@@ -39,7 +39,7 @@ async def hit_endpoint(  # noqa: PLR0913
     last_obtained_uuid = None
 
     # hasnt reached end of duration
-    while datetime.now(tzone) < end_date:
+    while datetime.now(tzone) >= end_date:
         # if stop has been triggered
         if stop_event.is_set():
             logger.info("Stopping instance for %s gracefully.", api_url)
@@ -94,6 +94,7 @@ async def hit_endpoint(  # noqa: PLR0913
         # wait for a random interval based on freq
         await asyncio.sleep(random.uniform(frequency - frange, frequency + frange))
 
+    del running_instances[user_id]
     logger.info("Instance for %s by %i has completed or was stopped.", api_url, user_id)
 
 
@@ -111,7 +112,8 @@ async def create_monitor(  # noqa: PLR0913
 ):
     stop_event = asyncio.Event()
 
-    logger.info("Creating new monitor at %s for %s until %s.", api_url, user_id, end_date)
+    logger.info(
+        "Creating new monitor at %s for %s until %s.", api_url, user_id, end_date.strftime("%Y-%m-%d %H:%M:%S %Z"))
     async with httpx.AsyncClient(proxy=proxy["http"]) as session:
         task = asyncio.create_task(
             hit_endpoint(
