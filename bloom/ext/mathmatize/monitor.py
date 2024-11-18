@@ -39,7 +39,7 @@ async def hit_endpoint(  # noqa: PLR0913
     last_obtained_uuid = None
 
     # hasnt reached end of duration
-    while datetime.now(tzone) >= end_date:
+    while end_date > datetime.now(tzone):
         # if stop has been triggered
         if stop_event.is_set():
             logger.info("Stopping instance for %s gracefully.", api_url)
@@ -93,6 +93,15 @@ async def hit_endpoint(  # noqa: PLR0913
 
         # wait for a random interval based on freq
         await asyncio.sleep(random.uniform(frequency - frange, frequency + frange))
+
+    if datetime.now(tzone) >= end_date:
+        await on_poll_end(
+            user_id=user_id,
+            activity_url=activity_url,
+            event_date=datetime.now(tzone),
+            reason="Monitor has reached end of duration.",
+        )
+        logger.debug("Instance by %s ended due to duration.", user_id)
 
     del running_instances[user_id]
     logger.info("Instance for %s by %i has completed or was stopped.", api_url, user_id)
