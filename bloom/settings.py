@@ -29,6 +29,8 @@ if DEV:
 
 TIMEZONE = ZoneInfo("America/New_York")
 
+VERSION = "2.1.5"
+
 # construct url for database
 DATABASE_TYPE = os.getenv("DATABASE_TYPE", "sqlite")
 DATABASE_PATH = os.getenv("DATABASE_PATH", "/database.db")

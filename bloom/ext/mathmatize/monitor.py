@@ -47,7 +47,7 @@ async def hit_endpoint(  # noqa: PLR0913
                 user_id=user_id,
                 activity_url=activity_url,
                 event_date=datetime.now(tzone),
-                reason="Duration ended.",
+                reason="Stopped by user",
             )
             break
 
@@ -89,6 +89,12 @@ async def hit_endpoint(  # noqa: PLR0913
 
         except httpx.RequestError as e:
             logger.debug("Failed to fetch poll %s for %i due to %s", api_url, user_id, e)
+            await on_poll_end(
+                user_id=user_id,
+                activity_url=activity_url,
+                event_date=datetime.now(tzone),
+                reason=f"Poll failed due to {e}",
+            )
             break
 
         # wait for a random interval based on freq
@@ -144,7 +150,7 @@ async def create_monitor(  # noqa: PLR0913
         await task
 
 
-async def stop_monitor(user_id, on_poll_end, graceful=True) -> bool:  # noqa: FBT002
+async def stop_monitor(user_id, graceful=True) -> bool:  # noqa: FBT002
     if user_id in running_instances:
         task, stop_event, activity_url = running_instances[user_id]
 
@@ -162,12 +168,6 @@ async def stop_monitor(user_id, on_poll_end, graceful=True) -> bool:  # noqa: FB
         # Remove the instance from the dictionary
         del running_instances[user_id]
         logger.info("Instance for %s has been stopped.", user_id)
-
-        await on_poll_end(
-            user_id=user_id,
-            activity_url=activity_url,
-            reason="Monitor stopped by user.",
-        )
         return True
 
     logger.debug("No running instance found for %s.", user_id)

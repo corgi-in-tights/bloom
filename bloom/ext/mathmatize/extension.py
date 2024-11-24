@@ -13,12 +13,12 @@ from helper import is_valid_uuid, user_dms_open
 
 from .monitor import can_create_instance, create_monitor, stop_monitor, user_has_instance
 
-default_settings = {"max_monitors": 3, "proxies": [], "frequency": 20, "frequency_range": 5}
+default_settings = {"max_monitors": 5, "proxies": [], "frequency": 20, "frequency_range": 5}
 
 
 class MathMatize(ConfigurableCog):
     def __init__(self, bot, **kwargs):
-        super().__init__(bot, "mathmatize", default_settings, logger_level=logging.INFO, **kwargs)
+        super().__init__(bot, "mathmatize", default_settings, logger_level=logging.DEBUG, **kwargs)
         self.monitors = []
 
     def cog_load(self):
@@ -54,7 +54,7 @@ class MathMatize(ConfigurableCog):
             user = await self.bot.fetch_user(user_id)
 
             if event_date:
-                desc = f'{activity_url} was stopped due to "{reason}" at {format_dt(event_date, 'S')}'
+                desc = f'{activity_url} was stopped due to "{reason}" at {format_dt(event_date, 'F')}'
             else:
                 desc = f'{activity_url} was stopped due to "{reason}"'
             embed = discord.Embed(
@@ -159,7 +159,7 @@ class MathMatize(ConfigurableCog):
     @app_commands.command(name="mm-monitor-stop")
     async def mm_monitor_stop(self, interaction: discord.Interaction):
         """Stop your current poll monitor, if you have one."""
-        if await stop_monitor(interaction.user.id, self.on_poll_end):
+        if await stop_monitor(interaction.user.id):
             await interaction.response.send_message(
                 "Gracefully stopping your linked instance.. you should receive a confirmation.",
                 ephemeral=True,

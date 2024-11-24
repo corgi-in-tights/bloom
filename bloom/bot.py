@@ -30,6 +30,7 @@ class BloomBot(commands.Bot):
         extension_settings: dict | None = None,
         testing_guild_id: int | None = None,
         timezone=default_timezone,
+        version="N/A",
         **kwargs,
     ):
         if initial_extensions is None:
@@ -43,6 +44,7 @@ class BloomBot(commands.Bot):
 
         self.testing_guild_id = testing_guild_id
         self.timezone = timezone
+        self.version = version
 
     async def setup_hook(self) -> None:
         # setup extensions & sync commands for test guild
@@ -89,6 +91,7 @@ async def main():
         testing_guild_id=settings.TESTING_GUILD_ID,
         owner_id=settings.DISCORD_OWNER_ID,
         timezone=settings.TIMEZONE,
+        version=settings.VERSION,
     ) as bot:
         bot.loop.add_signal_handler(signal.SIGINT, KeyboardInterruptHandler(bot))
         await bot.start(settings.BOT_TOKEN)
