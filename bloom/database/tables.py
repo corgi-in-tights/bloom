@@ -1,5 +1,3 @@
-import math
-import random
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()

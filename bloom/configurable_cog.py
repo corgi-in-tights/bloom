@@ -13,8 +13,7 @@ class ConfigurableCog(commands.Cog):
         self.cog_id = cog_id
         self._default_settings = default_settings
 
-        self._setup_logger(logger_level)
-        self.logger = logging.getLogger("bloom." + self.cog_id)
+        self.logger = self._setup_logger(logger_level)
 
     def cog_load(self):
         self.logger.info("Reloading cog %s", self.cog_id)
@@ -24,17 +23,7 @@ class ConfigurableCog(commands.Cog):
     def _setup_logger(self, logger_level):
         logger = logging.getLogger("bloom." + self.cog_id)
         logger.setLevel(logger_level)
-
-        # clear previous handlers
-        for handler in logger.handlers:
-            logger.removeHandler(handler)
-
-        handler = logging.StreamHandler()
-        dt_fmt = "%Y-%m-%d %H:%M:%S %Z"
-        formatter = logging.Formatter("[{asctime}] [{levelname}] {name}: {message}", dt_fmt, style="{")
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
+        return logger
 
     def _load_settings(self):
         # use default settings

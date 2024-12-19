@@ -55,7 +55,7 @@ TESTING_ADMIN_CHANNEL_ID = (
 )
 
 # == Extensions == #
-ENABLED_EXTENSIONS = ["ext.utils", "ext.mathmatize", "ext.reminders"]
+ENABLED_EXTENSIONS = ["ext.utils", "ext.mathmatize", "ext.reminders", "ext.snipe"]
 if DEV:
     ENABLED_EXTENSIONS.append("ext.development")
 

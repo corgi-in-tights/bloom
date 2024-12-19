@@ -65,10 +65,11 @@ class MathMatize(ConfigurableCog):
             )
             embed.set_author(name="MathMatize")
             await user.send(embed=embed)
+
         except discord.errors.HTTPException as e:
-            self.logger.warning("Failed poll change due to HTTP exception %s", e)
+            self.logger.warning("Failed poll end due to HTTP exception %s", e)
         except discord.errors.NotFound:
-            self.logger.warning("Failed poll change as user was not found.")
+            self.logger.warning("Failed poll end as user was not found.")
 
     @app_commands.command(name="mm-monitor")
     @app_commands.describe(
